@@ -154,7 +154,7 @@ describe('Business Workbench workspace surfaces', () => {
     expect(coverStudio.getByText(/P5 · Swiss/)).toBeTruthy()
   })
 
-  it('shows only the existing unapproved candidates and frozen Swiss framework in real Studios', () => {
+  it('shows the three real Studios workspaces without fabricated candidate data', () => {
     const candidates = createImageCandidateFixtures(IMAGE_MODELS[0], 'local prompt')
     expect(candidates).toHaveLength(4)
     expect(candidates[0]).toMatchObject({
@@ -170,23 +170,12 @@ describe('Business Workbench workspace surfaces', () => {
     })
 
     render(<StudiosSurface />)
-    expect(screen.getByRole('main', { name: 'Studios' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: '可用 Studios' })).toBeTruthy()
-    expect(screen.getByText('Avatar Studio')).toBeTruthy()
-    expect(screen.getByText('Voice Studio')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /Video Studio|Avatar Studio|Voice Studio/ })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: /继续查看候选/ }))
-    expect(screen.getByRole('main', { name: 'Image Studio' })).toBeTruthy()
-    expect(screen.getByText(/3 个真实候选 · 均未批准/)).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /生成/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /设为正式素材/ })).toBeNull()
-    expect(screen.getByText(/当前有 3 个候选素材，尚未人工确认正式素材/)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: /继续到 Cover Studio/ }))
-    expect(screen.getByRole('main', { name: 'Cover Studio' })).toBeTruthy()
-    expect(screen.getByText(/Baseline FROZEN/)).toBeTruthy()
-    expect(screen.getAllByText(/FORMAL_PLACEHOLDER/).length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText(/Renderer framework/)).toBeTruthy()
-    expect(screen.getByText(/Framework Ready 表示框架渲染检查完成/)).toBeTruthy()
+    expect(screen.getByRole('main', { name: 'Studios 创作工作台' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Studios' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /进入 Image Studio/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /进入 Video Studio/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /进入包装编辑器/ })).toBeTruthy()
+    expect(screen.queryByText(/FORMAL_PLACEHOLDER|Baseline FROZEN/)).toBeNull()
   })
 
   it('keeps XHS-only Studios gated while allowing Host-backed media creation without an XHS sample', async () => {
@@ -201,8 +190,8 @@ describe('Business Workbench workspace surfaces', () => {
     } as unknown as NonNullable<ConversationInjected['mediaStudio']>
 
     render(<StudiosSurface mediaStudio={mediaStudio} />)
-    expect(screen.getByText('真实样本当前不可读取；不会用候选 Fixture 替代。')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: /打开图像创作/ }))
+    expect(screen.queryByText('真实样本当前不可读取；不会用候选 Fixture 替代。')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /进入 Image Studio/ }))
     expect(await screen.findByRole('main', { name: 'Image Studio · 连续创作' })).toBeTruthy()
     await waitFor(() => {
       expect(mediaStudio.models).toHaveBeenCalledWith('image')
@@ -210,15 +199,19 @@ describe('Business Workbench workspace surfaces', () => {
     })
   })
 
-  it('does not expose independent media creation when the Host Remote is absent', () => {
+  it('shows the three Studios workflows without XHS sample gating when the Host Remote is absent', () => {
     publishXhsRealContext({ status: 'unavailable' })
     render(<StudiosSurface />)
-    expect(screen.getByText('真实样本当前不可读取；不会用候选 Fixture 替代。')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /打开图像创作|打开视频创作/ })).toBeNull()
+    expect(screen.getByRole('heading', { name: '开始创作' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Image Studio/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Video Studio/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Video Packaging/ })).toBeTruthy()
+    expect(screen.queryByText(/XHS 样本/)).toBeNull()
   })
 
   it('navigates from Studios to the same Project and Work context', () => {
     render(<><ProjectsSurface /><WorkSurface /><StudiosSurface /></>)
+    fireEvent.click(screen.getByRole('button', { name: /打开原有业务素材审核/ }))
     fireEvent.click(screen.getByRole('button', { name: /继续查看候选/ }))
     const imageStudio = within(screen.getByRole('main', { name: 'Image Studio' }))
     expect(imageStudio.getByLabelText('Image Studio 当前上下文').textContent).toContain('account2 · 2026-08 · 第02周 · note001')

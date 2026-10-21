@@ -20,7 +20,7 @@ const itemsResponse = (ids: readonly string[], nextCursor: string | null = null,
 
 describe('AIHOT official public API', () => {
   it('preserves every category, query filter and query-bound cursor without cross-query reuse', async () => {
-    const fetcher = vi.fn(async () => json(itemsResponse(['one'], 'next', 'industry', 'AI')))
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => json(itemsResponse(['one'], 'next', 'industry', 'AI')))
     const query = { mode: 'all', window: '7d', category: 'industry', q: ' AI ' } as const
     const first = await loadAihotItems(query, undefined, fetcher)
     expect(first.items[0]).toMatchObject({ id: 'one', sourceName: 'Publisher', reason: 'Published reason', originalUrl: 'https://publisher.example/one' })
@@ -78,7 +78,7 @@ describe('AIHOT official public API', () => {
   })
 
   it('reads story reports, timeline and related events without writes', async () => {
-    const fetcher = vi.fn(async () => json({ schemaVersion: 1, story: {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => json({ schemaVersion: 1, story: {
       publicId: 's1', title: 'Story', status: 'active', sourceCount: 1, reportCount: 1,
       firstReportAt: '2026-10-16T00:00:00Z', latestAt: '2026-10-16T01:00:00Z', latest: 'Latest', digest: 'Digest',
       links: { aihot: 'https://aihot.news/story/s1' }, reports: [{ id: 'i1', title: 'Report', summary: 'Summary',

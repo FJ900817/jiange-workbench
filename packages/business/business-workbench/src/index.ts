@@ -42,6 +42,13 @@ import type { RestrictedAgentModelConfig, RestrictedAgentPolicy } from './host-p
 import { BusinessOutputBundleStore } from './output-bundle-store.ts'
 import { HarnessRestrictedAgentRuntime } from './restricted-agent.ts'
 import {
+  freezeVideoPackagingAiPlanRequest,
+  gradeVideoPackagingModel,
+  proveVideoPackagingRetryBounds,
+  requestVideoPackagingAiPlan,
+} from './video-packaging-model.ts'
+import type { RunVideoPackagingPlanRequest } from './types.ts'
+import {
   BusinessReadBoundary,
   executionPackageHash,
   normalizeBusinessNames,
@@ -166,6 +173,9 @@ import type {
   ScysProjectSearchResult,
   ScysSourceStatusResult,
   ScysTopicIdentity,
+  VideoPackagingAsset,
+  VideoPackagingProject,
+  VideoPackagingRenderTask,
 } from './types.ts'
 import { readXhsRealContext } from './xhs-real-context.ts'
 import { listLocalAIHOTPendingRuns, processLocalAIHOTPending, readLocalAIHOTPendingRun, readLocalAIHOTIntelligence, readLocalAIHOTIntelligenceDetail, readLocalAIHOTReview, readLocalAIHOTReviews, writeLocalAIHOTReview } from './local-aihot-adapter.ts'
@@ -174,9 +184,13 @@ import { getXhsCoverAsset, getXhsFeedDetail, getXhsSourceStatus, searchXhsFeeds 
 import { analyzeXhsComments, XhsCommentAnalysisCache } from './xhs-comment-analysis.ts'
 import { ScysRadarAdapter } from './scys-radar-adapter.ts'
 import { mediaStudioDomainSpec, MediaStudioStore } from './media-studio.ts'
+import { VideoPackagingStore, videoPackagingDomainSpec } from './video-packaging.ts'
+import type { VideoPackagingConfig } from './video-packaging.ts'
+import type { JsonValue } from '@deepseek-ai/dsh-session/types'
 
 export { BusinessArtifactStore, artifactRelativePath, sha256Text } from './artifact-store.ts'
 export { BusinessOutputBundleStore } from './output-bundle-store.ts'
+export type { VideoPackagingConfig } from './video-packaging.ts'
 export { countXhsFullCharacters, xhsTitleCharacterObservation } from './execution-telemetry.ts'
 export {
   buildXhsCoverHandoffArtifact,
@@ -384,6 +398,8 @@ export interface Config {
   readonly leaseDurationMs: number
   /** Fixed model route for every restricted action; omission disables execution. */
   readonly restrictedAgent?: RestrictedAgentModelConfig
+  /** Optional Host-managed video packaging capability; absent or disabled fails closed. */
+  readonly videoPackaging?: VideoPackagingConfig
 }
 
 declare module '@deepseek-ai/cordis' {
@@ -533,6 +549,17 @@ export class BusinessWorkbenchService extends TypertRemoteService {
       maxTokens: number
       timeoutMs: number
     }),
+    videoPackaging: s.object({
+      enabled: s.boolean().default(false),
+      allowTechnicalTestAssets: s.boolean().default(false),
+      maxVideoBytes: s.number().step(1).min(1).max(1_073_741_824).default(200 * 1024 * 1024),
+      maxPngBytes: s.number().step(1).min(1).max(104_857_600).default(20 * 1024 * 1024),
+      maxOutputBytes: s.number().step(1).min(1).max(2_147_483_648).default(512 * 1024 * 1024),
+      maxProjects: s.number().step(1).min(1).max(1000).default(100),
+      renderTimeoutMs: s.number().step(1).min(1000).max(3_600_000).default(120_000),
+      ffmpegPath: s.string().default('ffmpeg'),
+      ffprobePath: s.string().default('ffprobe'),
+    }).default(undefined as unknown as VideoPackagingConfig),
   })
 
   /** Absolute versioned Artifact root. */
@@ -550,6 +577,7 @@ export class BusinessWorkbenchService extends TypertRemoteService {
   private readonly xhsCommentAnalysisCache = new XhsCommentAnalysisCache()
   private readonly scysRadar: ScysRadarAdapter
   private mediaStudio?: MediaStudioStore
+  private videoPackaging?: VideoPackagingStore
   private operationTail: Promise<void> = Promise.resolve()
   private mutationAdmissionOpen = true
 
@@ -603,6 +631,28 @@ export class BusinessWorkbenchService extends TypertRemoteService {
     const mediaDomain = await this.ctx.storageDomain.open(mediaStudioDomainSpec)
     this.ctx.effect(() => async () => { await mediaDomain.close() }, 'business-workbench.mediaStudioDomainClose')
     this.mediaStudio = new MediaStudioStore(mediaDomain.table('sessions'))
+    const packagingConfig = this.config.videoPackaging
+    if (packagingConfig !== undefined && packagingConfig.enabled) {
+      const packagingDomain = await this.ctx.storageDomain.open(videoPackagingDomainSpec)
+      const packagingStore = new VideoPackagingStore(
+        packagingDomain.table('assets'),
+        packagingDomain.table('projects'),
+        packagingDomain.table('renders'),
+        resolveDshHome(this.config.dshHome),
+        packagingConfig,
+      )
+      try {
+        await packagingStore.initialize()
+      } catch (error) {
+        await packagingDomain.close()
+        throw error
+      }
+      this.videoPackaging = packagingStore
+      this.ctx.effect(() => async () => {
+        await packagingStore.close()
+        await packagingDomain.close()
+      }, 'business-workbench.videoPackagingClose')
+    }
     await this.artifactStore.initialize()
     await this.outputBundleStore.initialize()
     await this.readBoundary?.initialize()
@@ -722,6 +772,55 @@ export class BusinessWorkbenchService extends TypertRemoteService {
     return this.requireMediaStudio().listModels(modality)
   }
 
+  /** Read live Harness LLM model catalogs with four-level readiness grading.
+   *
+   * V3-03R grades each model as registered → configured → routable, or
+   * not-callable with the failing level named. Credential status is verified
+   * via CredentialProvider.describe(); the secret value is never read.
+   * @returns frozen readiness facts per provider/model.
+   */
+  @Remote('listVideoPackagingAiModels')
+  async listVideoPackagingAiModels(): Promise<readonly import('./types.ts').VideoPackagingAiModel[]> {
+    const llm = this.ctx.llm
+    const providers = llm.listProviders()
+    const result = await Promise.all(providers.map(async (provider) => {
+      const models = await llm.listModels(provider.id)
+      return Promise.all(models.map(model =>
+        gradeVideoPackagingModel(this.ctx, provider, model),
+      ))
+    }))
+    return Object.freeze(result.flat())
+  }
+
+  /**
+   * V3-03R restricted invocation entry for Video Packaging AI suggestions.
+   * Always rejects in this stage: invocation is disabled by default and no
+   * provider request is sent. The entry exists so the route, its input
+   * bounds, and its denial are testable without a credential.
+   * @param request - frozen, user-authorized suggestion input.
+   * @returns never; throws VIDEO_PACKAGING_AI_DISABLED.
+   */
+  @Remote('requestVideoPackagingAiPlan')
+  async requestVideoPackagingAiPlan(
+    request: RunVideoPackagingPlanRequest,
+  ): Promise<import('./types.ts').VideoPackagingAiPlanSuggestion> {
+    const frozen = freezeVideoPackagingAiPlanRequest(request)
+    return requestVideoPackagingAiPlan(this.ctx, frozen)
+  }
+
+  /**
+   * Read retry-bound evidence for one Video Packaging provider route.
+   * Used by readiness UI and tests; never sends a request.
+   * @param provider - registered provider route id.
+   * @returns frozen retry evidence with the inspected layers named.
+   */
+  @Remote('describeVideoPackagingRetryBounds')
+  describeVideoPackagingRetryBounds(
+    provider: string,
+  ): import('./types.ts').VideoPackagingRetryEvidence {
+    return proveVideoPackagingRetryBounds(this.ctx, provider)
+  }
+
   /** List durable media sessions without returning generated media bytes.
    * @param modality - Image or video sessions.
    * @returns Sessions ordered by most recent update.
@@ -765,6 +864,84 @@ export class BusinessWorkbenchService extends TypertRemoteService {
   @Remote('cancelMediaStudioTask')
   cancelMediaStudioTask(taskId: string): Promise<MediaStudioTask> {
     return this.requireMediaStudio().cancelTask(taskId)
+  }
+
+  /** Begin an authenticated, bounded MP4 or transparent-PNG chunk upload into the selected DSH home. */
+  @Remote('beginVideoPackagingUpload')
+  beginVideoPackagingUpload(request: { readonly name: string; readonly mediaType: 'video/mp4' | 'image/png'; readonly bytes: number; readonly sha256: string }): Promise<{ readonly uploadId: string; readonly chunkBytes: number }> {
+    return this.requireVideoPackaging().beginUpload(request)
+  }
+
+  /** Append one ordered base64 chunk; each call is capped by the Host transfer policy. */
+  @Remote('appendVideoPackagingUploadChunk')
+  appendVideoPackagingUploadChunk(request: { readonly uploadId: string; readonly offset: number; readonly data: string }): Promise<{ readonly receivedBytes: number; readonly nextOffset: number }> {
+    return this.requireVideoPackaging().appendUploadChunk(request)
+  }
+
+  /** Verify the uploaded bytes and publish an immutable Host Asset record. */
+  @Remote('finishVideoPackagingUpload')
+  finishVideoPackagingUpload(uploadId: string): Promise<VideoPackagingAsset> {
+    return this.requireVideoPackaging().finishUpload(uploadId)
+  }
+
+  /** Abort and remove one incomplete upload staging file. */
+  @Remote('abortVideoPackagingUpload')
+  abortVideoPackagingUpload(uploadId: string): Promise<void> {
+    return this.requireVideoPackaging().abortUpload(uploadId)
+  }
+
+  /** Read safe metadata for one Host-managed media Asset. */
+  @Remote('readVideoPackagingAsset')
+  readVideoPackagingAsset(assetId: string): VideoPackagingAsset | null {
+    return this.requireVideoPackaging().getAsset(assetId)
+  }
+
+  /** Read one bounded chunk from a Host-managed media Asset. */
+  @Remote('readVideoPackagingAssetChunk')
+  readVideoPackagingAssetChunk(request: { readonly assetId: string; readonly offset: number; readonly maxBytes: number }): Promise<{ readonly asset: VideoPackagingAsset; readonly offset: number; readonly data: string; readonly eof: boolean }> {
+    return this.requireVideoPackaging().readAssetChunk(request)
+  }
+
+  /** Create a P5-07 project bound to an existing Host-managed MP4 Asset. */
+  @Remote('createVideoPackagingProject')
+  createVideoPackagingProject(request: { readonly name: string; readonly sourceVideoAssetId: string }): Promise<VideoPackagingProject> {
+    return this.requireVideoPackaging().createProject(request)
+  }
+
+  /** Read one Host-persisted P5-07 project and its current revision. */
+  @Remote('readVideoPackagingProject')
+  readVideoPackagingProject(projectId: string): VideoPackagingProject | null {
+    return this.requireVideoPackaging().getProject(projectId)
+  }
+
+  /** List source and visual assets referenced by one saved P5-07 project. */
+  @Remote('listVideoPackagingProjectAssets')
+  listVideoPackagingProjectAssets(projectId: string): readonly VideoPackagingAsset[] {
+    return this.requireVideoPackaging().listProjectAssets(projectId)
+  }
+
+  /** Save a validated P5-07 document using compare-and-swap revision control. */
+  @Remote('saveVideoPackagingProject')
+  saveVideoPackagingProject(request: { readonly projectId: string; readonly expectedRevision: number; readonly document: JsonValue }): Promise<VideoPackagingProject> {
+    return this.requireVideoPackaging().saveProject(request)
+  }
+
+  /** Submit one durable FFmpeg render task for a saved P5-07 project. */
+  @Remote('submitVideoPackagingRender')
+  submitVideoPackagingRender(projectId: string): Promise<VideoPackagingRenderTask> {
+    return this.requireVideoPackaging().submitRender(projectId)
+  }
+
+  /** Read one durable render task without restarting interrupted work. */
+  @Remote('readVideoPackagingRender')
+  readVideoPackagingRender(renderTaskId: string): VideoPackagingRenderTask | null {
+    return this.requireVideoPackaging().getRenderTask(renderTaskId)
+  }
+
+  /** Cancel one active FFmpeg child without deleting its task history or source files. */
+  @Remote('cancelVideoPackagingRender')
+  cancelVideoPackagingRender(renderTaskId: string): Promise<VideoPackagingRenderTask> {
+    return this.requireVideoPackaging().cancelRender(renderTaskId)
   }
 
   /** Read one bounded local AIHOT Article/Analysis page through the Host adapter.
@@ -868,7 +1045,7 @@ export class BusinessWorkbenchService extends TypertRemoteService {
    */
   @Remote('searchXhsFeeds')
   searchXhsFeeds(input: { readonly keyword: string; readonly sortBy?: XhsSearchSort }): Promise<XhsSearchResult> {
-    return searchXhsFeeds(input, undefined, trace => {
+    return searchXhsFeeds(input, undefined, (trace) => {
       this.ctx.logger.info(
         'business-workbench: XHS search diagnostic ERROR_CODE=%s HTTP_STATUS=%s DURATION_MS=%d ERROR_TYPE=%s',
         trace.errorCode ?? 'none', trace.httpStatus ?? 'none', trace.durationMs, trace.errorType ?? 'none',
@@ -3086,6 +3263,11 @@ export class BusinessWorkbenchService extends TypertRemoteService {
   private requireMediaStudio(): MediaStudioStore {
     if (this.mediaStudio === undefined) throw new Error('business-workbench: media studio is not initialized')
     return this.mediaStudio
+  }
+
+  private requireVideoPackaging(): VideoPackagingStore {
+    if (this.videoPackaging === undefined) throw new BusinessWorkbenchError('INVALID_OPERATION', 'business-workbench: Host Video Packaging is not enabled')
+    return this.videoPackaging
   }
 
   private enqueueMutation<T>(operation: () => Promise<T>): Promise<T> {

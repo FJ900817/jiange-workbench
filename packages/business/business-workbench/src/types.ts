@@ -1523,3 +1523,130 @@ export interface CreateCreativeTurnRequest {
   readonly modificationIntent?: string
   readonly requestedOutputCount?: number
 }
+
+/** V3-03R: four-level readiness grade for one Video Packaging model route. */
+export type VideoPackagingModelGrade =
+  /** Appears in the Harness LLM registry. */
+  | 'registered'
+  /** Provider credential is configured (verified via describe(); the value is never read). */
+  | 'configured'
+  /** Dedicated restricted route exists, is enabled, and retry-bounded. */
+  | 'routable'
+  /** Blocked; unavailableReason names the failing grade level. */
+  | 'not-callable'
+
+/** V3-03R: retry-bound evidence for one provider route. */
+export interface VideoPackagingRetryEvidence {
+  /** Registered provider route id. */
+  readonly provider: string
+  /** Resolved retry mode; 'unknown' when the policy cannot be inspected. */
+  readonly mode: 'normal' | 'always' | 'unknown'
+  /** Maximum retries after the first request; null when unbounded or unknown. */
+  readonly maxRetries: number | null
+  /** True only when every inspected layer proves a finite request bound. */
+  readonly bounded: boolean
+  /** Retry layers actually inspected, in request order. */
+  readonly layers: readonly string[]
+  /** Human-readable basis for the verdict; never a secret value. */
+  readonly note: string
+}
+
+/** Registered Harness language model and safe packaging-route readiness facts. */
+export interface VideoPackagingAiModel {
+  readonly provider: string
+  readonly providerName: string
+  readonly model: string
+  readonly modelName: string
+  /** V3-03R: four-level readiness grade (V3-03 had no grading; every model was not-callable). */
+  readonly grade: VideoPackagingModelGrade
+  readonly dedicatedRouteConfigured: boolean
+  /**
+   * V3-03R: credential status verified via CredentialProvider.describe().
+   * 'not-inspected' (V3-03 legacy), 'configured', 'missing', or 'unknown-provider'
+   * when no credential mapping exists. The secret value is never read.
+   */
+  readonly authentication: 'not-inspected' | 'configured' | 'missing' | 'unknown-provider'
+  readonly invocationReady: boolean
+  /** V3-03R: names the failing grade level and the concrete missing piece. */
+  readonly unavailableReason: string
+  /** V3-03R: retry-bound evidence; absent when the policy was not inspected. */
+  readonly retryEvidence?: VideoPackagingRetryEvidence
+  /** V3-03R: model invocation switch; always false in this stage. */
+  readonly invocationEnabled: boolean
+}
+
+/** V3-03R: wire input for the Video Packaging AI plan bridge call.
+ * Carries summaries and references only: never media bytes, never secrets. */
+export interface RunVideoPackagingPlanRequest {
+  readonly video: {
+    readonly assetId: string
+    readonly width: number
+    readonly height: number
+    readonly duration: number
+  }
+  readonly transcript: { readonly format: 'srt' | 'vtt'; readonly text: string }
+  readonly requirements: string
+  readonly mode: 'library' | 'free'
+  readonly canvas: { readonly width: number; readonly height: number }
+  readonly approvedMaterialSummaries: readonly string[]
+}
+
+/** V3-03R: structured suggestion returned by the Video Packaging AI route.
+ * Suggestions only: the caller (never the model) decides what enters the project. */
+export interface VideoPackagingAiPlanSuggestion {
+  readonly proposals: readonly {
+    readonly proposalId: string
+    readonly title: string
+    readonly rationale: string
+    readonly evidence: { readonly transcriptRange: string }
+    readonly component: { readonly type: string; readonly start: number; readonly duration: number }
+  }[]
+  readonly provider: string
+  readonly model: string
+  readonly generatedAt: number
+}
+
+/** Opaque Host-managed video or image asset exposed by the Video Packaging Remotes. */
+export interface VideoPackagingAsset {
+  readonly assetId: string
+  readonly kind: 'source-video' | 'visual-png' | 'render-output'
+  readonly name: string
+  readonly mediaType: 'video/mp4' | 'image/png'
+  readonly bytes: number
+  readonly sha256: string
+  readonly width: number
+  readonly height: number
+  readonly duration: number | null
+  readonly fps: number | null
+  readonly hasAudio: boolean
+  readonly videoCodec: string | null
+  readonly audioCodec: string | null
+  readonly audioSampleRate: number | null
+  readonly audioChannels: number | null
+  readonly hasAlpha: boolean
+  readonly status: 'technical-test' | 'pending-confirmation'
+  readonly createdAt: number
+}
+
+/** Host-owned P5-07 project and its source asset reference. */
+export interface VideoPackagingProject {
+  readonly projectId: string
+  readonly name: string
+  readonly sourceVideoAssetId: string
+  readonly revision: number
+  readonly document: JsonValue
+  readonly createdAt: number
+  readonly updatedAt: number
+}
+
+/** Persisted FFmpeg task state; running work is interrupted rather than replayed after restart. */
+export interface VideoPackagingRenderTask {
+  readonly renderTaskId: string
+  readonly projectId: string
+  readonly status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'interrupted'
+  readonly outputAssetId: string | null
+  readonly errorCode: string | null
+  readonly logTail: string
+  readonly createdAt: number
+  readonly updatedAt: number
+}

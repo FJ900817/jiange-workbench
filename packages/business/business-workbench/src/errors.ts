@@ -58,6 +58,8 @@ export type BusinessWorkbenchErrorCode =
   | 'OUTPUT_BUNDLE_WRITE_FAILED'
   | 'TELEMETRY_CORRUPT'
   | 'TELEMETRY_WRITE_FAILED'
+  | 'VIDEO_PACKAGING_AI_DISABLED'
+  | 'VIDEO_PACKAGING_AI_INPUT_TOO_LARGE'
 
 /** Non-sensitive normalized event facts captured when a restricted Agent has no visible text. */
 export interface RestrictedAgentOutputDiagnostics {

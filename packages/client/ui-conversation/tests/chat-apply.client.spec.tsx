@@ -23,7 +23,13 @@ async function bench() {
   const runtime = await SlotTestRuntime.create()
   runtime.provide('connection', { api: { settings: {} }, isLoopback: false })
   // The plugin injects both; these specs exercise no settings path.
-  runtime.provide('remote', { $on: () => () => {} })
+  // apply reads this status once during mount; these slot tests do not exercise
+  // Business Workbench behavior.
+  const businessWorkbench = {
+    readXhsSwissContext: vi.fn().mockResolvedValue({ ok: false, error: { message: 'not configured' } }),
+  }
+  runtime.provide('remote', { $on: () => () => {}, businessWorkbench: businessWorkbench as never })
+  runtime.provide('remote.businessWorkbench', businessWorkbench)
   runtime.provide('settingsScope', { bind: () => stubSettingsScope().scope } as never)
   await runtime.sessions.add({ id: ROOT, summary: { title: 'R', displayTitle: 'R' } }, { current: false })
   await runtime.sessions.add(

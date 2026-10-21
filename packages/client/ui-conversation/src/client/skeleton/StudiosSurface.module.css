@@ -8,6 +8,8 @@
   background: var(--dsw-alias-bg-base);
 }
 
+.legacyBack { position: sticky; z-index: 2; top: 0; min-height: 40px; margin: 8px 0 0 20px; padding: 0 12px; border: 1px solid var(--dsw-alias-border-l1); border-radius: 8px; color: var(--dsw-alias-label-secondary); background: var(--dsw-alias-bg-base); font: inherit; font-size: 14px; cursor: pointer; }
+
 .container,
 .studioContainer {
   box-sizing: border-box;

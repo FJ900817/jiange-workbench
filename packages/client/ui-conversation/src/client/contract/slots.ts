@@ -544,6 +544,22 @@ export interface ConversationInjected {
     poll: (taskId: string) => Promise<import('@deepseek-ai/dsh-business-workbench/types').MediaStudioTask>
     cancel: (taskId: string) => Promise<import('@deepseek-ai/dsh-business-workbench/types').MediaStudioTask>
   }
+  /** Host-owned Video Packaging operations; media bytes move in bounded chunks. */
+  videoPackaging?: {
+    aiModels: () => Promise<readonly import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingAiModel[]>
+    /** V3-03R: restricted AI plan entry; rejects while invocation is disabled. */
+    runPlan: (request: import('@deepseek-ai/dsh-business-workbench/types').RunVideoPackagingPlanRequest) => Promise<import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingAiPlanSuggestion>
+    upload: (file: File, mediaType: 'video/mp4' | 'image/png') => Promise<import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingAsset>
+    asset: (assetId: string) => Promise<import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingAsset | null>
+    assetChunk: (assetId: string, offset: number, maxBytes: number) => Promise<{ readonly asset: import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingAsset; readonly offset: number; readonly data: string; readonly eof: boolean }>
+    createProject: (name: string, sourceVideoAssetId: string) => Promise<import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingProject>
+    project: (projectId: string) => Promise<import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingProject | null>
+    projectAssets: (projectId: string) => Promise<readonly import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingAsset[]>
+    saveProject: (projectId: string, expectedRevision: number, document: import('@deepseek-ai/dsh-session/types').JsonValue) => Promise<import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingProject>
+    submitRender: (projectId: string) => Promise<import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingRenderTask>
+    render: (renderTaskId: string) => Promise<import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingRenderTask | null>
+    cancelRender: (renderTaskId: string) => Promise<import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingRenderTask>
+  }
   /**
    * Framework-bound sources. `composerBlock` is this session's block when a
    * plugin raised one; the reason is the blocker's own localized copy, which

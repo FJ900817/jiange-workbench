@@ -25,7 +25,7 @@ const COMMAND_QUICK_ENTRY_SELECTOR = {
 
 export function ConversationRoot({
   sessionId, useSession, useSessions, useWorkspaces, useInput, useComposerBlock,
-  renderSlot, renderSlotChain, selectWorkspace, localAIHOT, xhsRadar, scysRadar, mediaStudio, t,
+  renderSlot, renderSlotChain, selectWorkspace, localAIHOT, xhsRadar, scysRadar, mediaStudio, videoPackaging, t,
 }: ConversationRootProps) {
   const selectedWorkspace = useWorkspaceIdentity()
   const openState = useSession(s => s.openState)
@@ -209,7 +209,7 @@ export function ConversationRoot({
             >
               {t('command.quick.workspace')}
             </button>
-            {(['tasks', 'ssh', 'skills'] as const).map((tool) => (
+            {(['tasks', 'ssh', 'skills'] as const).map(tool => (
               <button
                 key={tool}
                 type="button"
@@ -268,7 +268,7 @@ export function ConversationRoot({
           <WorkSurface />
         </div>
         <div className={clsx(css.workspaceRoute, selectedWorkspace !== 'studios' && css.workspaceRouteHidden)} aria-hidden={selectedWorkspace !== 'studios'}>
-          <StudiosSurface {...(mediaStudio === undefined ? {} : { mediaStudio })} />
+          <StudiosSurface {...(mediaStudio === undefined ? {} : { mediaStudio })} {...(videoPackaging === undefined ? {} : { videoPackaging })} />
         </div>
         <div className={clsx(css.workspaceRoute, selectedWorkspace !== 'radar' && css.workspaceRouteHidden)} aria-hidden={selectedWorkspace !== 'radar'}>
           <RadarSurface isActive={selectedWorkspace === 'radar'} {...(localAIHOT === undefined ? {} : { localAIHOT })} {...(xhsRadar === undefined ? {} : { xhsRadar })} {...(scysRadar === undefined ? {} : { scysRadar })} />

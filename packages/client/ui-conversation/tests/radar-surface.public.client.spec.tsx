@@ -319,7 +319,7 @@ describe('Radar Public API mode', () => {
       list: vi.fn().mockResolvedValueOnce(localListResult()).mockResolvedValueOnce({ status: 'unavailable' as const }).mockResolvedValueOnce(localListResult()),
       detail: vi.fn(async () => ({ status: 'unavailable' as const })),
     }
-    const publicFetch = vi.fn(async () => jsonResponse({ schemaVersion: 1, count: 0, items: [] }))
+    const publicFetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => jsonResponse({ schemaVersion: 1, count: 0, items: [] }))
     vi.stubGlobal('fetch', publicFetch)
 
     render(<RadarSurface localAIHOT={localAIHOT} />)

@@ -32,6 +32,11 @@ function serviceOf(harness: Awaited<ReturnType<typeof setupHarness>>) {
 }
 
 describe('BusinessWorkbenchService', () => {
+  it('returns only registered language models and never exposes a packaging invocation route', async () => {
+    const fixture = await harness()
+    await expect(serviceOf(fixture).listVideoPackagingAiModels()).resolves.toEqual([])
+  })
+
   it('creates one idempotent Batch with exactly four isolated Jobs', async () => {
     const fixture = await harness()
     const service = serviceOf(fixture)

@@ -6,22 +6,31 @@ import { useXhsRealContext } from './xhs-real-context-store.ts'
 import { MediaCreationStudio } from './MediaCreationStudio.tsx'
 import type { ConversationInjected } from '../contract/slots.ts'
 import css from './StudiosSurface.module.css'
+import { StudiosWorkspaceHome } from './StudiosWorkspaceHome.tsx'
 
 type StudioPage = 'home' | 'image' | 'cover'
+type CreationView = { readonly modality: 'image' | 'video'; readonly sessionId?: string; readonly packaging?: boolean }
 
 const WORK_LABEL = 'Swiss 封面框架与 P5 素材审核'
 
 /** Render the real, read-only Studios routes for the active XHS sample. */
-export function StudiosSurface({ mediaStudio }: { readonly mediaStudio?: ConversationInjected['mediaStudio'] } = {}) {
-  const [creationModality, setCreationModality] = useState<'image' | 'video' | null>(null)
+export function StudiosSurface({ mediaStudio, videoPackaging }: { readonly mediaStudio?: ConversationInjected['mediaStudio']; readonly videoPackaging?: ConversationInjected['videoPackaging'] } = {}) {
+  const [creationView, setCreationView] = useState<CreationView | null>(null)
+  const [legacyOpen, setLegacyOpen] = useState(false)
   const realContext = useXhsRealContext()
-  if (creationModality !== null) {
+  const projectNavigation = useProjectContextNavigation()
+  useEffect(() => {
+    if (projectNavigation?.destination === 'image-studio' || projectNavigation?.destination === 'cover-studio') setLegacyOpen(true)
+  }, [projectNavigation])
+  if (creationView !== null) {
     if (mediaStudio === undefined) return <SurfaceNotice text="Host 媒体创作入口尚不可用。" />
-    return <MediaCreationStudio modality={creationModality} bridge={mediaStudio} onBack={() => { setCreationModality(null) }} />
+    return <MediaCreationStudio modality={creationView.modality} bridge={mediaStudio} videoPackaging={videoPackaging} {...(creationView.sessionId === undefined ? {} : { initialSessionId: creationView.sessionId })} {...(creationView.packaging === undefined ? {} : { initialPackagingOpen: creationView.packaging })} onBack={() => { setCreationView(null) }} />
   }
-  if (realContext.status === 'loading') return <SurfaceNotice text="正在读取账号 2 Swiss 真实样本…" mediaStudio={mediaStudio} onOpenImageCreation={() => { setCreationModality('image') }} onOpenVideoCreation={() => { setCreationModality('video') }} />
-  if (realContext.status === 'unavailable') return <SurfaceNotice text="真实样本当前不可读取；不会用候选 Fixture 替代。" mediaStudio={mediaStudio} onOpenImageCreation={() => { setCreationModality('image') }} onOpenVideoCreation={() => { setCreationModality('video') }} />
-  return <RealStudiosSurface context={realContext.context} mediaStudioAvailable={mediaStudio !== undefined} onOpenImageCreation={() => { setCreationModality('image') }} onOpenVideoCreation={() => { setCreationModality('video') }} />
+  if (legacyOpen && realContext.status === 'ready') return <div><button type="button" className={css.legacyBack} onClick={() => { setLegacyOpen(false) }}>← 返回 Studios 创作中心</button><RealStudiosSurface context={realContext.context} mediaStudioAvailable={mediaStudio !== undefined} onOpenImageCreation={() => { setCreationView({ modality: 'image' }) }} onOpenVideoCreation={() => { setCreationView({ modality: 'video' }) }} /></div>
+  return <StudiosWorkspaceHome mediaStudio={mediaStudio} videoPackagingAvailable={videoPackaging !== undefined} onOpen={(view, sessionId) => {
+    if (view === 'packaging') setCreationView({ modality: 'video', packaging: true })
+    else setCreationView({ modality: view, ...(sessionId === undefined ? {} : { sessionId }) })
+  }} {...(realContext.status === 'ready' ? { onOpenLegacy: () => { setLegacyOpen(true) } } : {})} />
 }
 
 function SurfaceNotice({ text, mediaStudio, onOpenImageCreation, onOpenVideoCreation }: {

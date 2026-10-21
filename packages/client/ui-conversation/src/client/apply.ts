@@ -118,7 +118,7 @@ function selectApproval({ interactions }: ComposerChainProps): ApprovalWait | nu
  */
 export function apply(ctx: Context): void {
   void ctx.remote.businessWorkbench.readXhsSwissContext().then(
-    result => {
+    (result) => {
       publishXhsRealContext(result.ok ? { status: 'ready', context: result.value } : { status: 'unavailable' })
     },
     () => { publishXhsRealContext({ status: 'unavailable' }) },
@@ -336,6 +336,86 @@ export function apply(ctx: Context): void {
     },
   }
 
+  const videoPackaging = {
+    aiModels: async () => {
+      const result = await ctx.remote.businessWorkbench.listVideoPackagingAiModels()
+      if (!result.ok) throw new Error('Harness 语言模型目录不可用')
+      return result.value
+    },
+    runPlan: async (request: import('@deepseek-ai/dsh-business-workbench/types').RunVideoPackagingPlanRequest) => {
+      const result = await ctx.remote.businessWorkbench.requestVideoPackagingAiPlan(request)
+      if (!result.ok) throw new Error(`AI 包装方案请求被拒绝（${result.error.code}）：${result.error.message}`)
+      return result.value
+    },
+    upload: async (file: File, mediaType: 'video/mp4' | 'image/png') => {
+      const bytes = new Uint8Array(await file.arrayBuffer())
+      const digest = await crypto.subtle.digest('SHA-256', bytes)
+      const sha256 = [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('')
+      const begun = await ctx.remote.businessWorkbench.beginVideoPackagingUpload({ name: file.name, mediaType, bytes: bytes.byteLength, sha256 })
+      if (!begun.ok) throw new Error(`MP4/PNG 导入未开始：Host 视频包装服务不可用（${begun.error.code}）。原文件未修改；请检查连接或服务配置后重新选择文件。`)
+      try {
+        for (let offset = 0; offset < bytes.byteLength; offset += begun.value.chunkBytes) {
+          const chunk = bytes.subarray(offset, Math.min(bytes.byteLength, offset + begun.value.chunkBytes))
+          let binary = ''
+          for (let index = 0; index < chunk.length; index += 0x8000) binary += String.fromCharCode(...chunk.subarray(index, Math.min(index + 0x8000, chunk.length)))
+          const appended = await ctx.remote.businessWorkbench.appendVideoPackagingUploadChunk({ uploadId: begun.value.uploadId, offset, data: btoa(binary) })
+          if (!appended.ok) throw new Error(`Host 媒体分块上传失败（${appended.error.code}）`)
+        }
+        const finished = await ctx.remote.businessWorkbench.finishVideoPackagingUpload(begun.value.uploadId)
+        if (!finished.ok) throw new Error(`Host 媒体校验失败（${finished.error.code}）`)
+        return finished.value
+      } catch (error) {
+        await ctx.remote.businessWorkbench.abortVideoPackagingUpload(begun.value.uploadId)
+        throw error
+      }
+    },
+    asset: async (assetId: string) => {
+      const result = await ctx.remote.businessWorkbench.readVideoPackagingAsset(assetId)
+      if (!result.ok) throw new Error('Host 素材信息不可用')
+      return result.value
+    },
+    assetChunk: async (assetId: string, offset: number, maxBytes: number) => {
+      const result = await ctx.remote.businessWorkbench.readVideoPackagingAssetChunk({ assetId, offset, maxBytes })
+      if (!result.ok) throw new Error('Host 素材分块不可用')
+      return result.value
+    },
+    createProject: async (name: string, sourceVideoAssetId: string) => {
+      const result = await ctx.remote.businessWorkbench.createVideoPackagingProject({ name, sourceVideoAssetId })
+      if (!result.ok) throw new Error('Host 包装工程创建失败')
+      return result.value
+    },
+    project: async (projectId: string) => {
+      const result = await ctx.remote.businessWorkbench.readVideoPackagingProject(projectId)
+      if (!result.ok) throw new Error('Host 包装工程读取失败')
+      return result.value
+    },
+    projectAssets: async (projectId: string) => {
+      const result = await ctx.remote.businessWorkbench.listVideoPackagingProjectAssets(projectId)
+      if (!result.ok) throw new Error('Host 工程素材列表不可用')
+      return result.value
+    },
+    saveProject: async (projectId: string, expectedRevision: number, document: import('@deepseek-ai/dsh-session/types').JsonValue) => {
+      const result = await ctx.remote.businessWorkbench.saveVideoPackagingProject({ projectId, expectedRevision, document })
+      if (!result.ok) throw new Error(`工程未保存（${result.error.code}）。修改仍在当前页面；请检查组件范围与 Host 连接后重试，成功前不要刷新。`)
+      return result.value
+    },
+    submitRender: async (projectId: string) => {
+      const result = await ctx.remote.businessWorkbench.submitVideoPackagingRender(projectId)
+      if (!result.ok) throw new Error('Host 渲染任务提交失败')
+      return result.value
+    },
+    render: async (renderTaskId: string) => {
+      const result = await ctx.remote.businessWorkbench.readVideoPackagingRender(renderTaskId)
+      if (!result.ok) throw new Error('Host 渲染任务状态不可用')
+      return result.value
+    },
+    cancelRender: async (renderTaskId: string) => {
+      const result = await ctx.remote.businessWorkbench.cancelVideoPackagingRender(renderTaskId)
+      if (!result.ok) throw new Error('Host 渲染任务无法取消')
+      return result.value
+    },
+  }
+
   // The per-session input machine registry (SessionInputResolver face; published as
   // ctx.conversation.input by the service below sharing this one instance).
   const inputHub = new InputHub(ctx, t)
@@ -388,6 +468,7 @@ export function apply(ctx: Context): void {
       xhsRadar,
       scysRadar,
       mediaStudio,
+      videoPackaging,
       selectWorkspace: async (workspaceId) => {
         const nextId = await workspaces.connectWorkspace(workspaceId)
         if (sessionId !== undefined && nextId !== sessionId) {

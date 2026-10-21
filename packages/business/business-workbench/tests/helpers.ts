@@ -16,6 +16,7 @@ import type {
   CreateSingleBusinessBatchRequest,
 } from '../src/index.ts'
 import type { RestrictedAgentModelConfig } from '../src/host-policy.ts'
+import type { VideoPackagingConfig } from '../src/video-packaging.ts'
 
 /** Deterministic input reference for one test-card slot. */
 export function input(index: number): BusinessInputReference {
@@ -61,6 +62,7 @@ export async function setupHarness(
   leaseDurationMs = 60_000,
   restrictedAgent?: RestrictedAgentModelConfig,
   credentialPath?: string,
+  videoPackaging?: VideoPackagingConfig,
 ): Promise<{
   readonly ctx: Context
   readonly root: string
@@ -94,6 +96,7 @@ export async function setupHarness(
       readRoots: { xhs: xhsRoot, sharedProductTruth: sharedProductTruthRoot },
       leaseDurationMs,
       ...(restrictedAgent === undefined ? {} : { restrictedAgent }),
+      ...(videoPackaging === undefined ? {} : { videoPackaging }),
     })
   } catch (error) {
     await ctx.fiber.dispose()
