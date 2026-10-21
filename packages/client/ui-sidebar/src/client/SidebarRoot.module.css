@@ -1,0 +1,629 @@
+/* Sidebar column (figma 133:7629): vertical stack, padding 12/6, sidebar
+   fill + 1px right border painted by the layout column. Collapse is a
+   slide + crossfade, not a morph: the content holds its frozen expanded
+   layout (inline width set by the component) and fades in place (.fading)
+   while the sliding column (AppFrame grid tracks) clips it; the rail layout
+   (.collapsed) only applies after the fade settles, so nothing reflows
+   mid-slide. */
+
+.root {
+  position: relative;
+  --dsh-sidebar-inline-padding: 12px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 6px var(--dsh-sidebar-inline-padding);
+  box-sizing: border-box;
+  background: var(--dsw-specific-sidebar-fill);
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  /* The sidebar is elevated above the conversation surface, so a revealed
+     scrollbar uses the l2 pair. .quietBars hides it without changing layout. */
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+}
+
+/* The action rail has its own 76px column and centered 44px control targets. */
+.root.collapsed {
+  padding: 10px 16px 8px;
+}
+
+/* Scrollbars in the column are a pointer affordance: the shell adds this
+   class whenever the pointer is not inside (SidebarRoot.tsx owns the linger),
+   and rebinding ui-theme's indirection pair to `transparent` takes the thumb
+   out of every scroll region nested under it — the workspace browser's
+   session list today. `transparent` rather than `display: none` on the bar:
+   the reservation (`scrollbar-gutter: stable` on the list) stays in force, so
+   revealing the thumb never reflows a row. Rebinding contract and the two
+   rendering paths it reaches: ui-theme's README. */
+.root.quietBars {
+  --dsh-scrollbar-thumb: transparent;
+  --dsh-scrollbar-thumb-hover: transparent;
+}
+
+/* External plugins inject these legacy triggers beside New Session. Keep
+   their controllers mounted, but expose their existing click targets from
+   Command's Quick Access instead of the global navigation column. */
+.root > :global([data-dsh-taskboard-entry]),
+.root > :global([data-dsh-ssh-entry]),
+.root > :global([data-dsh-skill-explorer-entry]) {
+  display: none !important;
+}
+
+/* Collapse phase 1: the whole frozen-width content fades out in place over
+   150ms; at settle the children unmount/snap to the rail layout. */
+.fading > * {
+  opacity: 0;
+  transition: opacity 150ms var(--ds-ease-in-out);
+}
+
+/* Wide-only content fades back in on expand remount. */
+.wide {
+  animation: wide-in 200ms var(--ds-ease-in-out);
+}
+
+@keyframes wide-in {
+  from { opacity: 0; }
+}
+
+/* At the 150ms rail settle, the four upper controls enter from the former
+   rail right edge over the remaining 150ms of the AppFrame track transition.
+   The bottom-pinned settings seat shares their opacity timeline but stays
+   horizontally fixed. Only a live collapse gets .railIn; a cold collapsed
+   render stays static. */
+.railIn .iconButton,
+.railIn .newSession {
+  animation: rail-in 100ms var(--ds-ease-in-out) backwards;
+}
+
+.railIn .footArea {
+  animation: rail-fade-in 100ms var(--ds-ease-in-out) backwards;
+}
+
+@keyframes rail-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes rail-fade-in {
+  from { opacity: 0; }
+}
+
+/* Logo row (figma pad (4,8,4,8)): expanded keeps the panel toggle at the
+   right edge; the rail gives every control the same base left anchor before
+   the shared entry translation is applied. */
+.logoRow {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  height: 60px;
+  padding: 8px 0 8px 4px;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.collapsed .logoRow {
+  height: 44px;
+  padding: 0;
+  margin-bottom: 8px;
+  justify-content: center;
+  overflow: visible;
+}
+
+.headerToggle { width: 28px; height: 28px; }
+.root:not(.collapsed) .headerToggle { align-self: center; }
+.railControls { display: flex; flex: none; justify-content: center; margin: 0 0 8px; }
+.railControl { width: 44px; height: 44px; }
+.visuallyHidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+.brandGlyph {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+}
+
+.brandGlyph svg { display: block; }
+
+/* Expanded brand identity has independent mark and word slots. */
+.brand {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+
+/* Mark and name are independent slots; the shell owns their shared baseline,
+   spacing, and height so either occupant can vary in width. */
+.brandIdentity {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  min-width: 0;
+}
+
+.brandMark {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brandName {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  height: 24px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: 0;
+}
+
+.brandChinese {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.brandSeparator {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.brandWordmark {
+  display: block;
+  flex: none;
+  width: auto;
+  height: 10px;
+}
+
+.iconButton {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.iconButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.collapsed .iconButton { width: 44px; height: 44px; }
+
+/* The rail's brand glyph and expand control are separate elements. */
+
+/* Rail icons ride the primary ink (figma rail spec); expanded keeps the
+   secondary icon-button ink. */
+.collapsed .iconButton {
+  color: var(--dsw-alias-label-primary);
+}
+
+.buildRevision {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 3px;
+  color: var(--dsw-alias-label-primary-inverted);
+  background: var(--dsw-alias-label-primary);
+  font-family: var(--ds-font-family-code);
+  font-size: 8px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+/* New Session: 38px bar, 12px radius (figma 133:7634 geometry, squared-off
+   corners); collapsed it renders as the rail's plain icon control. */
+.newSession {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 8px 16px;
+  margin: 0 2px 8px;
+  box-sizing: border-box;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  background: var(--dsw-alias-button-elevated-fill);
+  color: var(--dsw-alias-label-primary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.newSession:hover {
+  background: var(--dsw-alias-button-floating-hover);
+}
+
+.collapsed .newSession {
+  align-self: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0 0 12px;
+  gap: 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+.collapsed .newSession:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.newSessionLabel {
+  max-width: 200px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.collapsed .newSessionLabel {
+  max-width: 0;
+}
+
+.homeNavigation {
+  flex: none;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.aiWorkspace {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 8px 2px 12px;
+}
+
+.groupHeading {
+  margin: 0 0 6px 8px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+}
+
+.aiWorkspaceList {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workspaceEntry {
+  min-height: 56px;
+}
+
+.workspaceButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms var(--ds-ease-in-out), color 150ms var(--ds-ease-in-out);
+}
+
+.workspaceButton[data-workspace='command'] { --workspace-ink: #2563eb; --workspace-wash: #edf3ff; }
+.workspaceButton[data-workspace='projects'] { --workspace-ink: #059669; --workspace-wash: #e8f8f0; }
+.workspaceButton[data-workspace='work'] { --workspace-ink: #ed7b18; --workspace-wash: #fff3e8; }
+.workspaceButton[data-workspace='studios'] { --workspace-ink: #7c3aed; --workspace-wash: #f2ecff; }
+.workspaceButton[data-workspace='radar'] { --workspace-ink: #0f9f9a; --workspace-wash: #e7f8f7; }
+
+.workspaceButton:hover { background: transparent; }
+
+.workspaceButtonActive {
+  color: var(--dsw-alias-label-primary);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--workspace-wash) 76%, white);
+}
+
+.workspaceButtonActive::before {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--workspace-ink);
+  content: '';
+}
+
+.workspaceButton [data-workspace-identity] {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.workspaceButton [data-workspace-identity] > span:first-child {
+  width: 40px;
+  height: 40px;
+}
+
+.workspaceName {
+  overflow: hidden;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aiWorkspaceRail {
+  align-self: center;
+  margin: 0 0 12px;
+}
+
+.aiWorkspaceRail .aiWorkspaceList {
+  gap: 12px;
+}
+
+.aiWorkspaceRail .workspaceEntry,
+.aiWorkspaceRail .workspaceButton {
+  width: 44px;
+  min-height: 44px;
+}
+
+.aiWorkspaceRail .workspaceButton {
+  justify-content: center;
+  padding: 0;
+  border-radius: 11px;
+}
+
+.aiWorkspaceRail .workspaceButton::before {
+  top: 8px;
+  bottom: 8px;
+}
+
+.aiWorkspaceRail .workspaceButton [data-workspace-identity] {
+  width: 44px;
+  height: 44px;
+}
+
+.aiWorkspaceRail .workspaceName {
+  display: none;
+}
+
+.aiWorkspaceRail .workspaceButton [data-workspace-identity] > span:first-child {
+  width: 34px;
+  height: 34px;
+}
+
+.toolNote {
+  margin-left: auto;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 10px;
+}
+
+.workspaceButton:focus-visible {
+  outline: 2px solid var(--dsw-alias-label-primary-bluish);
+  outline-offset: 1px;
+}
+
+/* Footer seats: additive actions stack above Settings. Each occupant owns its
+   button geometry and hover chrome. */
+.footArea {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.settingsArea,
+.footerActions,
+.libraryArea {
+  flex: none;
+  min-width: 0;
+  width: 100%;
+}
+
+.libraryArea {
+  position: relative;
+  padding: 0 2px 4px;
+  box-sizing: border-box;
+}
+
+.libraryButton {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.libraryButton:hover,
+.libraryButton[aria-expanded='true'] {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.libraryButton svg {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.libraryNotice {
+  position: absolute;
+  z-index: 2;
+  right: 2px;
+  bottom: calc(100% + 4px);
+  left: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 9px;
+  background: var(--dsw-specific-sidebar-fill);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 8%);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.collapsed .libraryArea {
+  width: 44px;
+  padding: 0 0 4px;
+}
+
+.collapsed .libraryButton {
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+  padding: 0;
+}
+
+.collapsed .libraryNotice {
+  right: auto;
+  bottom: 0;
+  left: calc(100% + 8px);
+  width: max-content;
+  max-width: 180px;
+}
+
+.footerActions {
+  display: flex;
+}
+
+/* Native update status anchors to this reserved seat instead of floating over
+   the conversation. The macOS bridge positions its existing status control
+   from this element's client rectangle. */
+.systemStatusSeat {
+  flex: none;
+  width: 100%;
+  height: 32px;
+  margin: 4px 0;
+}
+
+.voiceSeat {
+  flex: none;
+  display: none;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+}
+
+.collapsed .footArea {
+  align-items: center;
+}
+
+.collapsed .settingsArea,
+.collapsed .footerActions {
+  display: flex;
+  justify-content: center;
+  width: auto;
+}
+
+.collapsed .footerActions {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 44px;
+}
+
+.collapsed .footerActions > * {
+  flex: none;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  height: 44px;
+}
+
+.collapsed .systemStatusSeat {
+  width: 44px;
+  height: 44px;
+  margin: 0;
+}
+
+.collapsed .voiceSeat {
+  display: flex;
+  width: 44px;
+  height: 44px;
+}
+
+.collapsed .footArea { gap: 4px; }
+
+/* Short desktop windows preserve every Workspace identity and persistent
+   utility. */
+@media (max-height: 919px) {
+  .collapsed > :global([data-dsh-taskboard-entry]),
+  .collapsed > :global([data-dsh-ssh-entry]),
+  .collapsed > :global([data-dsh-skill-explorer-entry]) {
+    display: none;
+  }
+
+  .collapsed .newSession { margin-bottom: 4px; }
+  .collapsed .aiWorkspaceRail { margin-bottom: 4px; }
+  .collapsed .aiWorkspaceRail .aiWorkspaceList { gap: 8px; }
+  .collapsed .footerActions { display: none; }
+}
+
+.libraryButton:focus-visible {
+  outline: 2px solid var(--dsw-alias-label-primary-bluish);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wide,
+  .fading > *,
+  .railIn .iconButton,
+  .railIn .newSession,
+  .railIn .footArea {
+    transition: none;
+    animation: none;
+  }
+}

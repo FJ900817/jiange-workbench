@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-10-05-xhs-radar-loopback-no-auth.md
+2026-10-05-xhs-radar-loopback-no-auth.md: d73359af673d6d0f804cd22500e2c334e4686273
+2026-10-05-xhs-radar-loopback-no-auth.zh.md: 9450e64144d28d7649a26ff754ec9be494dbf2c4

@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-10-07-scys-radar-host-oauth-read-adapter.md
+2026-10-07-scys-radar-host-oauth-read-adapter.md: 4192b73e1f6c06b17c952b9cbc12f55597677026
+2026-10-07-scys-radar-host-oauth-read-adapter.zh.md: 26ab3ac73ab5a70511f63c6dbdb75c640500fdec
