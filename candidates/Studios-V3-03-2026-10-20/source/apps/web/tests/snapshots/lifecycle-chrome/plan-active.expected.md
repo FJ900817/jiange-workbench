@@ -1,0 +1,60 @@
+- button "Collapse sidebar":
+  - img
+- button "New session":
+  - img
+  - text: New Session
+- navigation "AI Workspace navigation":
+  - heading "AI Workspace" [level=2]
+  - list:
+    - listitem:
+      - button "Command" [pressed]
+    - listitem:
+      - button "Projects"
+    - listitem:
+      - button "Work"
+    - listitem:
+      - button "Studios"
+    - listitem:
+      - button "Radar"
+- region "More tools":
+  - button "More tools"
+- text: Workspaces
+- button "Search sessions":
+  - img
+- textbox "Search sessions..."
+- button "View options":
+  - img
+- button "Add workspace":
+  - img
+- tree "Sessions":
+  - treeitem "workspace" [expanded]:
+    - img
+    - text: workspace
+  - treeitem "New Session" [selected]
+- button "Library":
+  - img
+  - text: Library
+- button "Settings":
+  - img
+  - text: Settings
+- text: Jian Ge, what shall we get done today?
+- button "Choose workspace":
+  - img
+  - text: workspace
+  - img
+- button "Standard mode":
+  - img
+  - text: Standard mode
+  - img
+- textbox "Describe what you want to build"
+- button "Commands":
+  - img
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Plan mode on, press to turn off": Plan
+- button "Select model, current DeepSeek-V4-Flash":
+  - text: DeepSeek-V4-Flash
+  - img
+- button "Send message" [disabled]
+- text: Details
+- button "Close details"
+- text: Click a tool row in the message flow to view its details

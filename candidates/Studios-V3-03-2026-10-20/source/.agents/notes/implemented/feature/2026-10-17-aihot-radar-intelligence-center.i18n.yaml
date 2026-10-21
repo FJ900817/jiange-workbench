@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-10-17-aihot-radar-intelligence-center.md
+2026-10-17-aihot-radar-intelligence-center.md: 0a1e728019b3a5627471ee14bbb48448f08bd103
+2026-10-17-aihot-radar-intelligence-center.zh.md: 9e3f523941f97710a3dc0891f1e090a84d5ee3f8

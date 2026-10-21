@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-10-04-radar-pending-analysis-controlled-action.md
+2026-10-04-radar-pending-analysis-controlled-action.md: 9912ba504c34f154fde264d6f5b64ef411d2aa50
+2026-10-04-radar-pending-analysis-controlled-action.zh.md: 058fe9fe1f075088028c9e9feab0fc36ebcda0c5

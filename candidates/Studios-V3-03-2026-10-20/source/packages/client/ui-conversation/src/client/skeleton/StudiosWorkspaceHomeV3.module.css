@@ -1,0 +1,70 @@
+.page { box-sizing: border-box; width: 100%; min-height: 100%; overflow: auto; padding: 28px clamp(20px, 3vw, 46px) 44px; color: #262332; background: #fbfaff; }
+.content { width: min(100%, 1480px); margin: 0 auto; }
+.hero { display: flex; min-height: 190px; align-items: center; padding: 30px 34px; border: 1px solid #e9e4f3; border-radius: 20px; background: radial-gradient(ellipse 55% 96% at 91% 22%, #c5b8e838 0%, #e4def325 51%, transparent 100%), linear-gradient(112deg, #fff 5%, #fbfaff 53%, #f2f0f9 100%); box-shadow: 0 10px 34px #40346a0a; }
+.heroCopy { min-width: 0; }
+.kicker,.sectionEyebrow { color: #777286; font-size: 12px; font-weight: 700; letter-spacing: .11em; }
+.hero h1 { margin: 10px 0 0; color: #292536; font-size: clamp(27px, 2.5vw, 34px); font-weight: 690; letter-spacing: -.035em; line-height: 1.18; }
+.hero p { margin: 10px 0 0; color: #625f70; font-size: 16px; line-height: 1.55; }
+.hero p strong { color: #514274; font-weight: 660; }
+.heroFoot { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 21px; }
+.mode { display: inline-flex; align-items: center; gap: 9px; padding: 8px 13px; border: 1px solid #e4dcef; border-radius: 999px; color: #4c4262; background: #fff; font-size: 14px; font-weight: 620; }
+.mode i { width: 8px; height: 8px; border-radius: 50%; background: #8460c6; box-shadow: 0 0 0 3px #f0eafb; }
+.mode small { margin-left: 2px; color: #767183; font-size: 12px; font-weight: 500; }
+.heroMeta { color: #89859a; font-size: 12px; font-weight: 650; letter-spacing: .12em; }
+.creation,.recent { margin-top: 28px; }
+.sectionHead { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 15px; }
+.sectionHead h2 { margin: 5px 0 0; color: #2e2a39; font-size: 20px; font-weight: 680; line-height: 1.3; }
+.sectionHead > span { color: #706c7c; font-size: 14px; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.card { position: relative; display: flex; min-height: 228px; flex-direction: column; align-items: flex-start; padding: 22px; border: 1px solid #e6e2ed; border-radius: 16px; color: #292637; background: #fff; text-align: left; cursor: pointer; box-shadow: 0 4px 14px #3b315109; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.card:hover:not(:disabled) { transform: translateY(-2px); border-color: #c7b8e5; box-shadow: 0 12px 28px #46376b14; }
+.card:focus-visible,.recentCard:focus-visible,.filters button:focus-visible,.packagingNote button:focus-visible { outline: 3px solid #a78bd8; outline-offset: 2px; }
+.card:disabled { opacity: .55; cursor: not-allowed; }
+.image { background: linear-gradient(145deg, #fff 48%, #f6f1ff 100%); }
+.video { background: linear-gradient(145deg, #fff 50%, #f2f5fb 100%); }
+.packaging { background: linear-gradient(145deg, #fff 50%, #faf5ed 100%); }
+.cardTop { display: flex; width: 100%; align-items: center; justify-content: space-between; }
+.number { color: #858194; font-size: 13px; font-weight: 700; letter-spacing: .12em; }
+.glyph { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid #e5dcf5; border-radius: 13px; color: #7656b8; background: #f6f2fc; font-size: 22px; }
+.video .glyph { border-color: #dfe5ef; color: #526988; background: #f2f5fa; }
+.packaging .glyph { border-color: #eee4d6; color: #987347; background: #faf5ed; }
+.cardTitle { margin-top: 20px; color: #2e2a39; font-size: 21px; font-weight: 690; line-height: 1.3; }
+.cardDescription { max-width: 36ch; margin-top: 8px; color: #696575; font-size: 15px; line-height: 1.55; }
+.cardFooter { display: flex; width: 100%; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 20px; }
+.cardFooter > span { color: #777385; font-size: 13px; }
+.cardFooter strong { display: inline-flex; align-items: center; gap: 9px; color: #6846a9; font-size: 14px; font-weight: 660; white-space: nowrap; }
+.cardFooter i { font-size: 18px; font-style: normal; }
+.video .cardFooter strong { color: #4c6385; }
+.packaging .cardFooter strong { color: #8c683f; }
+.recent { padding-top: 3px; }
+.recentHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 14px; }
+.recentHeading .sectionHead { margin-bottom: 0; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px; border: 1px solid #e8e4ed; border-radius: 12px; background: #f5f3f8; }
+.filters button { min-height: 36px; padding: 0 13px; border: 0; border-radius: 9px; color: #686476; background: transparent; font: inherit; font-size: 14px; cursor: pointer; }
+.filters button:hover { color: #4f3c73; background: #fff; }
+.filters .filterActive { color: #563b88; background: #fff; font-weight: 650; box-shadow: 0 1px 4px #39304416; }
+.state { display: flex; min-height: 104px; flex-direction: column; align-items: center; justify-content: center; gap: 7px; padding: 20px; border: 1px dashed #dcd7e5; border-radius: 14px; color: #5f5b6b; background: #fff; font-size: 15px; line-height: 1.5; text-align: center; }
+.state strong { color: #393546; font-size: 16px; }
+.state span { max-width: 72ch; }
+.recentGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.recentCard { display: flex; min-width: 0; min-height: 94px; align-items: center; gap: 13px; padding: 15px; border: 1px solid #e7e3ed; border-radius: 13px; color: inherit; background: #fff; text-align: left; cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease; }
+.recentCard:hover { border-color: #c5b6e0; box-shadow: 0 5px 17px #48396b10; }
+.recentIcon { display: grid; width: 44px; height: 44px; flex: 0 0 auto; place-items: center; border-radius: 13px; font-size: 20px; }
+.imageIcon { color: #6d4ead; background: #f1ebfa; }
+.videoIcon { color: #4f6688; background: #edf1f7; }
+.recentInfo { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }
+.recentInfo small { color: #777286; font-size: 11px; font-weight: 700; letter-spacing: .09em; }
+.recentInfo strong { overflow: hidden; color: #322e3e; font-size: 15px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.recentInfo > span { color: #706c7a; font-size: 12px; }
+.recentArrow { color: #7254ad; font-size: 20px; }
+.packagingNote { display: flex; align-items: center; gap: 13px; margin-top: 13px; padding: 14px 17px; border: 1px solid #eee7db; border-radius: 13px; background: #fcfaf6; }
+.packagingGlyph { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border-radius: 12px; color: #90683b; background: #f6efe4; font-size: 19px; }
+.packagingNote > div { min-width: 0; flex: 1; }
+.packagingNote strong { color: #383342; font-size: 15px; font-weight: 660; }
+.packagingNote p { margin: 4px 0 0; color: #6c6875; font-size: 13px; line-height: 1.45; }
+.packagingNote button { min-height: 40px; flex: 0 0 auto; padding: 0 14px; border: 1px solid #e5d7c2; border-radius: 9px; color: #77572f; background: #fff; font: inherit; font-size: 14px; font-weight: 620; cursor: pointer; }
+.packagingNote button:disabled { opacity: .5; cursor: not-allowed; }
+.legacyLink { margin-top: 14px; padding: 8px 0; border: 0; color: #66518c; background: transparent; font: inherit; font-size: 14px; font-weight: 620; cursor: pointer; }
+@media (max-width: 1120px) { .cards { gap: 11px; } .card { min-height: 238px; padding: 18px; } .cardFooter { align-items: flex-start; flex-direction: column; gap: 9px; } .recentGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .page { padding: 18px 16px 30px; } .hero { min-height: 0; padding: 23px 20px; } .hero h1 { max-width: 15ch; font-size: 28px; } .hero p { max-width: 42ch; font-size: 15px; } .heroMeta { display: none; } .sectionHead,.recentHeading { align-items: flex-start; flex-direction: column; gap: 10px; } .sectionHead > span { font-size: 13px; } .cards,.recentGrid { grid-template-columns: 1fr; } .card { min-height: 190px; padding: 19px; } .cardFooter { align-items: center; flex-direction: row; } .filters { width: 100%; } .filters button { flex: 1; padding: 0 8px; font-size: 13px; } .packagingNote { align-items: flex-start; flex-wrap: wrap; } .packagingNote > div { flex-basis: calc(100% - 58px); } .packagingNote button { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .card,.recentCard { transition: none; } }

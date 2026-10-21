@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-10-01-project-context-long-field-disclosure.md
+2026-10-01-project-context-long-field-disclosure.md: 3452e2a8be4b2be3c6bc7febb8aec97c805e18d1
+2026-10-01-project-context-long-field-disclosure.zh.md: c3efa7c664179bde65616823ce99c439f72bc98f

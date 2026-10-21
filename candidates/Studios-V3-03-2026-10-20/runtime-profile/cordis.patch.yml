@@ -1,0 +1,15 @@
+- id: business-workbench
+  name: '@deepseek-ai/dsh-business-workbench'
+  config:
+    dshHome: !!js dshHomePath()
+    leaseDurationMs: 30000
+    videoPackaging:
+      enabled: true
+      allowTechnicalTestAssets: true
+      maxVideoBytes: 52428800
+      maxPngBytes: 2097152
+      maxOutputBytes: 536870912
+      maxProjects: 10
+      renderTimeoutMs: 600000
+      ffmpegPath: /opt/homebrew/bin/ffmpeg
+      ffprobePath: /opt/homebrew/bin/ffprobe

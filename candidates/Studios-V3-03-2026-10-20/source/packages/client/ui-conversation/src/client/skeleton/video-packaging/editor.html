@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Studios · Video Packaging 整合 P5-07</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .overlay-item.title .title-emphasis{color:var(--amber);text-decoration:underline;text-decoration-color:var(--amber);text-decoration-thickness:3px;text-underline-offset:7px}
+      .overlay-item.highlight.underline{border:0!important;justify-content:flex-start;text-align:left;text-shadow:0 2px 9px #000b}
+      .overlay-item.highlight.underline:after{content:"";position:absolute;left:0;bottom:17%;width:78%;height:4px;border-radius:3px;background:var(--amber);opacity:.96}
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">S</span><div><strong>Studios</strong><small>VIDEO PACKAGING</small></div></div>
+      <div class="project-title"><span class="status-dot"></span><span id="project-name">未命名包装工程</span><span id="save-state" class="save-state">未保存</span><span id="runtime-badge" class="runtime-badge hidden">P5-07 隔离测试</span></div>
+      <div class="top-actions"><button id="ai-packaging-toggle" class="button secondary" aria-expanded="false">AI 智能包装</button><button id="save-button" class="button secondary">保存工程</button><button id="render-button" class="button primary">渲染 MP4</button></div>
+    </header>
+    <main class="workspace">
+      <aside class="library panel">
+        <div class="panel-heading"><div><span class="eyebrow">ASSETS</span><h2>素材与组件</h2></div></div>
+        <section class="asset-section">
+          <div class="section-title"><h3>视频主轨</h3><span class="count" id="asset-status">未导入</span></div>
+          <label class="import-drop" for="video-file"><span class="upload-icon">↑</span><strong>导入 MP4</strong><small>素材仅保存在当前工程目录</small></label>
+          <input id="video-file" type="file" accept="video/mp4,.mp4" hidden />
+          <div id="asset-card" class="asset-card empty">等待导入视频素材</div>
+        </section>
+        <section class="external-assets-section">
+          <div class="section-title"><h3>共享视觉素材库</h3><span class="count" id="visual-asset-count">0</span></div>
+          <div class="library-registration">
+            <input id="register-name" placeholder="素材名称（可选）" />
+            <input id="register-category" placeholder="分类，如：品牌标识" />
+            <input id="register-purpose-tags" placeholder="用途标签，逗号分隔" />
+            <input id="register-style-tags" placeholder="风格标签，逗号分隔" />
+            <input id="register-scenes" placeholder="推荐场景，逗号分隔" />
+            <div class="library-defaults"><input id="register-width" type="number" min="1" value="400" aria-label="默认宽度"/><input id="register-height" type="number" min="1" value="225" aria-label="默认高度"/><input id="register-duration" type="number" min="0.1" step="0.1" value="4" aria-label="默认持续时间"/></div>
+            <input id="register-source" placeholder="来源说明" />
+            <input id="register-license" placeholder="授权状态（默认待核实）" value="待核实" />
+          </div>
+          <label class="subtitle-drop visual-import" for="visual-file"><b>登记透明 PNG / ProRes 4444 MOV</b><small>复制到共享素材库 · 上传后默认待用户确认 · ≤ 80 MB</small></label>
+          <input id="visual-file" type="file" accept="image/png,.png,video/quicktime,.mov" multiple hidden />
+          <div class="library-group"><strong>正式可复用 · 用户已确认</strong><div id="formal-library-list" class="visual-asset-list"><div class="asset-card empty">暂无用户明确确认的正式可复用素材</div></div></div>
+          <div class="library-group"><strong>研发素材 · 技术测试 / 待确认</strong><div id="development-library-list" class="visual-asset-list"><div class="asset-card empty">暂无待确认或测试素材</div></div></div>
+          <div class="fixture-note">共享素材只读引用，不会被工程编辑删除或覆盖。未确认素材只能加入测试工程；外部扁平图内部元素不可拆层。</div>
+          <div class="fixture-note">动态透明采用 ProRes 4444 Alpha；浏览器由本机 FFmpeg 抽帧预览（约 8fps），最终渲染使用完整帧率。WebM Alpha 当前未通过本机解码验证。</div>
+        </section>
+        <section class="transcript-section">
+          <div class="section-title"><h3>口播字幕</h3><span class="count">SRT / VTT</span></div>
+          <label class="subtitle-drop" for="subtitle-file"><b>导入带时间码字幕</b><small>本地解析；不自动识别</small></label>
+          <input id="subtitle-file" type="file" accept=".srt,.vtt,application/x-subrip,text/vtt" hidden />
+          <div id="transcript-status" class="transcript-status">尚未导入字幕</div>
+          <label class="field-label" for="transcript-editor">字幕时间码与正文（可校订）</label>
+          <textarea id="transcript-editor" class="transcript-editor" spellcheck="false" aria-label="SRT 字幕编辑器" placeholder="导入已有 ASR 的 SRT / VTT；不会自动伪造识别结果"></textarea>
+          <button id="save-transcript" class="button secondary transcript-save" disabled>校验并保存字幕</button>
+        </section>
+        <section class="asset-recommendation-section">
+          <div class="section-title"><h3>匹配已确认素材</h3><span class="count" id="recommendation-count">0</span></div>
+          <div class="fixture-note">确定性标签检索 · 非 AI 推荐 · 只检索授权状态已确认的素材</div>
+          <button id="retrieve-assets" class="button secondary" disabled>检索字幕对应素材</button>
+          <div id="asset-recommendations" class="asset-recommendations"><div class="asset-recommendation-empty">导入字幕后检索。未确认素材不会出现在推荐中。</div></div>
+        </section>
+        <section class="component-section">
+          <div class="section-title"><h3>包装组件</h3><span class="count">3 类</span></div>
+          <button class="component-add" data-add="title"><span class="component-icon title-icon">T</span><span><b>标题文字</b><small>文字层 · 淡入上移</small></span><i>＋</i></button>
+          <button class="component-add" data-add="highlight"><span class="component-icon highlight-icon">□</span><span><b>重点强调框</b><small>描边框 · 关键事实</small></span><i>＋</i></button>
+          <button class="component-add" data-add="info"><span class="component-icon info-icon">▤</span><span><b>信息卡片</b><small>信息层 · 标题与说明</small></span><i>＋</i></button>
+        </section>
+        <section class="project-section">
+          <div class="section-title"><h3>工程文件</h3><span class="live-label">DISK</span></div>
+          <div class="project-file"><span class="file-icon">JSON</span><span><b>project.json</b><small>自动保存到研发工程目录</small></span></div>
+          <p class="privacy-note">素材与工程仅保存在本机隔离研发目录；不会上传或连接 AI Provider。</p>
+        </section>
+      </aside>
+
+      <section class="center-column">
+        <div class="preview-panel panel">
+          <div class="preview-toolbar"><div><span class="eyebrow">PREVIEW</span><strong id="time-readout">00:00.00</strong><span id="video-meta" class="video-meta">导入视频后开始</span></div><div class="preview-controls"><button id="play-button" class="icon-button" aria-label="播放">▶</button><button id="fit-button" class="icon-button fit-button">适配</button></div></div>
+          <div class="stage-wrap" id="stage-wrap">
+            <div class="stage" id="stage">
+              <video id="source-video" playsinline preload="metadata"></video>
+              <div id="overlay-layer" class="overlay-layer"></div>
+              <div id="empty-stage" class="empty-stage"><div class="empty-video-icon">▱</div><strong>导入 MP4 开始编辑</strong><span>源视频与音轨会保留在最终输出中</span></div>
+            </div>
+          </div>
+          <div class="preview-foot"><span><i class="tiny-dot"></i>实时预览与工程时间轴同步</span><span id="component-count">0 个包装组件</span></div>
+        </div>
+
+        <div class="timeline-panel panel">
+          <div class="timeline-header"><div><span class="eyebrow">TIMELINE</span><h2>时间轴</h2></div><div class="timeline-tools"><span id="timeline-duration">时长 —</span><button id="zoom-out" class="icon-button">−</button><button id="zoom-in" class="icon-button">＋</button></div></div>
+          <div class="timeline-scroll" id="timeline-scroll"><div class="timeline-content" id="timeline-content"><div class="ruler-row"><div class="track-label ruler-label">时间</div><div class="ruler" id="ruler"></div></div><div id="track-list"></div><div class="playhead" id="playhead"><span></span></div></div></div>
+          <div class="timeline-foot"><span>拖动色块调整起始时间 · 拖动右端调整持续时间</span><span id="playhead-label">播放头 00:00.00</span></div>
+        </div>
+      </section>
+
+      <aside class="inspector panel">
+        <div class="panel-heading"><div><span class="eyebrow">INSPECTOR</span><h2>属性面板</h2></div><button id="delete-component" class="icon-button danger" title="删除组件">⌫</button></div>
+        <section id="ai-packaging-panel" class="ai-packaging-panel hidden" aria-label="AI 智能包装设置">
+          <div class="ai-panel-heading"><span class="eyebrow">字幕驱动 · 人工审核</span><strong>AI 智能包装</strong><p>先生成建议并校验，确认后才会新增到时间轴；不会覆盖已有组件。</p></div>
+          <label class="ai-field"><span>执行模型</span><select id="ai-model-select" aria-label="执行模型"><option value="">正在读取 Harness 模型目录…</option></select></label>
+          <div id="ai-model-status" class="ai-status" role="status">真实模型调用保持关闭。</div>
+          <div class="ai-field"><span>字幕 / 转写</span><div id="ai-transcript-status" class="ai-status">尚无经过校验的时间字幕。</div></div>
+          <label class="ai-field"><span>包装模式</span><select id="ai-mode-select"><option value="free">自由创作 · 仅当前支持的文字组件</option><option value="library">素材库 · 仅正式确认素材</option></select></label>
+          <label class="ai-field"><span>创作要求</span><textarea id="ai-requirements" rows="3" maxlength="500" placeholder="可选：说明节奏、语气或留白要求"></textarea></label>
+          <div class="fixture-note">本候选仅运行明确标注的规则 Fixture，不调用任何语言模型。字幕作为不可信内容，仅用于证据匹配。</div>
+          <button id="plan-button" class="button secondary plan-button" disabled>生成包装方案</button>
+          <div id="asset-mode-status" class="ai-status hidden"></div>
+          <div id="plan-preview" class="plan-preview hidden"></div>
+          <div class="ai-plan-actions"><button id="reject-plan" class="button secondary hidden">拒绝方案</button><button id="apply-plan" class="button primary plan-apply hidden">确认所选组件</button></div>
+        </section>
+        <div id="inspector-empty" class="inspector-empty"><div class="select-glyph">◈</div><strong>选择一个包装组件</strong><span>可在画面或时间轴选中后编辑</span></div>
+        <div id="inspector-fields" class="inspector-fields hidden"></div>
+        <div id="render-status" class="render-status hidden"></div>
+      </aside>
+    </main>
+    <div id="toast" class="toast" role="status"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
