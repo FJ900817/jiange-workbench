@@ -37,15 +37,28 @@ describe('Video Packaging library allowlist', () => {
     sourceKind: 'imported-srt',
     segments: parseSubtitles('srt', '1\n00:00:01,000 --> 00:00:04,000\n不要急着改指令。\n', 8),
   }
+  const validRefFor = (lib: string) => {
+    if (lib === 'aikou') return { lib, componentId: 'tag', params: { label: '测试', en: 'TEST', icon: 'warn', x: 40, y: 300 } }
+    if (lib === 'talkcraft') return { lib, componentId: 'split-text-stagger', params: { text: '测试文字' } }
+    return { lib, componentId: 'typography/outline-word-fill', params: { word: '测试' } }
+  }
   const withLib = (lib: string) => {
     const p = structuredClone(createFixturePlan({ duration: 8, width: 1280, height: 720, transcript }))
-    p.proposals[0]!.libraryRef = { lib, componentId: 'x', params: {} }
+    p.proposals[0]!.libraryRef = validRefFor(lib)
     return p
   }
 
   it('accepts refs to integrated libraries (aikou, talkcraft, shotcraft)', () => {
     for (const lib of ['aikou', 'talkcraft', 'shotcraft']) {
       expect(() => validatePackagingPlan(withLib(lib))).not.toThrow()
+    }
+  })
+
+  it('rejects refs with illegal componentIds (component-level gate)', () => {
+    for (const lib of ['aikou', 'talkcraft', 'shotcraft']) {
+      const p = structuredClone(createFixturePlan({ duration: 8, width: 1280, height: 720, transcript }))
+      p.proposals[0]!.libraryRef = { lib, componentId: 'not-a-component', params: {} }
+      expect(() => validatePackagingPlan(p)).toThrow('白名单')
     }
   })
 

@@ -15,6 +15,8 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { AIKOU_SELECT_PROMPT } from '@deepseek-ai/dsh-client-ui-conversation/src/client/skeleton/video-packaging/aikou-select-prompt.js'
+import { TALKCRAFT_SELECT_PROMPT } from '@deepseek-ai/dsh-client-ui-conversation/src/client/skeleton/video-packaging/talkcraft-select-prompt.js'
+import { SHOTCRAFT_SELECT_PROMPT } from '@deepseek-ai/dsh-client-ui-conversation/src/client/skeleton/video-packaging/shotcraft-cards/shotcraft-select.js'
 import { BusinessWorkbenchError } from './errors.ts'
 import type {
   RunVideoPackagingPlanRequest,
@@ -247,12 +249,18 @@ export function freezeVideoPackagingAiPlanRequest(
  * The model outputs suggestions only; it never writes to the project,
  * triggers rendering, or approves materials. Pinned verbatim: the Host,
  * not the model, decides what enters the timeline.
+ * Card-selection guides for the three open libraries (aikou / talkcraft /
+ * shotcraft) are appended after the base instruction, one section each.
  */
 export const VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT =
   '你是视频包装建议助手。你只输出包装方案建议（JSON），绝不直接修改工程、触发渲染或批准素材。' +
   '每条建议必须引用字幕时间码作为证据；无字幕依据的建议必须省略。只推荐用户已批准的素材摘要中出现的素材。' +
   '\n\n' +
-  AIKOU_SELECT_PROMPT
+  AIKOU_SELECT_PROMPT +
+  '\n\n' +
+  TALKCRAFT_SELECT_PROMPT +
+  '\n\n' +
+  SHOTCRAFT_SELECT_PROMPT
 
 /**
  * Dedicated restricted invocation entry for Video Packaging AI suggestions.

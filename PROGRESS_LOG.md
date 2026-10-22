@@ -116,3 +116,21 @@
 - Agent Notes: notes/2026-10-22-p1-talkcraft.md, notes/2026-10-22-p2-shotcraft.md
 - 待简哥拍板：① talkcraft 透明化改造做不做 ② 是否做一次真实 AI 点名测试
   （需另行授权调模型）
+
+## 2026-10-22 P2 收尾接线：三库选卡提示词 + lint 进生产校验链路（分支 p2-more-components）
+
+- video-packaging-model.ts：VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT 追加
+  TALKCRAFT_SELECT_PROMPT + SHOTCRAFT_SELECT_PROMPT（三库同一提示词注入架构）
+- packaging-plan.js：validatePackagingPlan 接入三个 lint 校验器（按 lib 过滤
+  后调用）；非法 componentId 抛中文错；无 libraryRef 提案跳过
+- 浏览器 bundle：embedded-editor.ts 新增 aikouLintJs/talkcraftLintJs/
+  shotcraftLintJs 内联串（转义 round-trip 已验证）；VideoPackagingEditor.tsx
+  的 buildDocument 用 IIFE 包裹 lint 模块（解决三文件 fail/
+  validateLibraryRef/KNOWN_PARAMS 重名冲突），packagingPlanJs 同步再生
+- 测试：新增 video-packaging-library-wiring.spec.ts（6 项）；旧 plan spec
+  的 componentId:'x' 占位改为每库真实合法引用 + 新增非法 ID 拒绝测试；
+  model spec +1（三个提示词标记均注入）
+- 全绿：client 5 文件 45/45，business 13/13，tsc 干净，oxlint staged 0 警告
+- 红线：零付费模型调用；未碰 127.0.0.1:3080 与 ~/.dsh；未做 Desktop 部署；
+  三套库原文件未改动（只读）
+- Agent Note: .agents/notes/implemented/architecture/2026-10-22-p2-library-wiring.md

@@ -134,6 +134,12 @@ describe('V3-03R restricted model entry', () => {
   it('pins the suggestion system prompt: suggestions only, never project writes', () => {
     expect(VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT).toContain('绝不直接修改工程')
   })
+
+  it('injects all three library card-selection guides', () => {
+    expect(VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT).toContain('【选组件指南 · AI口播包装库】')
+    expect(VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT).toContain('【选卡指南 · video-talkcraft')
+    expect(VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT).toContain('【选镜头卡指南 · shotcraft')
+  })
 })
 
 describe('V3-03R remotes through isolated Harness', () => {

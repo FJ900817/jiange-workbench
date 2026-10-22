@@ -1,5 +1,9 @@
 /** Parse timestamped subtitle fixtures and convert validated plans to P5 project components. */
 
+import { validateAikouLibraryRefs } from './aikou-lint.js'
+import { validateTalkcraftLibraryRefs } from './talkcraft-lint.js'
+import { validateShotcraftLibraryRefs } from './shotcraft-cards/shotcraft-lint.js'
+
 const COMPONENT_TYPES = new Set(['title', 'highlight', 'info'])
 const MAX_SEGMENTS = 500
 const MAX_PROPOSALS = 8
@@ -176,6 +180,11 @@ export function validatePackagingPlan(plan) {
       if (ref.state !== undefined && typeof ref.state !== 'string') throw new Error(`组件 ${item.proposalId} 的组件引用画面状态无效`)
     }
   }
+  // 组件级门禁：已开放三库的 componentId 白名单 + 参数校验。
+  // 每个校验器只看自己库的提案；无 libraryRef 的提案跳过；非法引用抛中文错。
+  validateAikouLibraryRefs({ proposals: plan.proposals.filter(item => item.libraryRef?.lib === 'aikou') })
+  validateTalkcraftLibraryRefs({ proposals: plan.proposals.filter(item => item.libraryRef?.lib === 'talkcraft') })
+  validateShotcraftLibraryRefs({ proposals: plan.proposals.filter(item => item.libraryRef?.lib === 'shotcraft') })
   for (let time = 0; time < duration; time += 0.05) {
     const visible = plan.proposals.filter(item => time >= item.start && time < item.start + item.duration)
     if (visible.length > 2) throw new Error(`时间 ${time.toFixed(2)}s 同时出现的包装组件超过两类`)
