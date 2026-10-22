@@ -82,6 +82,7 @@
     }
   ],
   "exclude": [
-    "**/*.legacy.*"
+    "**/*.legacy.*",
+    "src/client/skeleton/video-packaging/shotcraft-cards"
   ]
 }

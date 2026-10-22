@@ -83,3 +83,36 @@
 | TIMELINE/PERSISTENCE/RENDER | 待验证 | V3-03 已 PASS，本分支需回归 |
 | MODEL REAL | NOT RUN | 本轮必须保持 |
 | DESKTOP | NOT RUN | 本轮必须保持 |
+
+## 2026-10-22 P1 组件库接入（分支 p1-components，已推送 d5a52714）
+
+- 施工单 schema 新增 libraryRef{lib, componentId, params, state?}；style 锁死
+  neutral-editorial（AI 只许换文字/时间/位置）
+- 接入 AI口播包装库 8 组件（tag/qa/stat/months/numlist/strips/counter/tiles，
+  白名单；库本身只读未改动）
+- 导演手册决策表注入提示词；aikou-lint 校验施工单引用
+- 渲染双轨：预览用 HTML，Host PNG 导出用 Canvas 2D（SVG foreignObject 在
+  Chromium 下污染画布，已改掉）
+- 测试 23/23；云端真机 19/19（隔离 Host + headless Chromium，成片抽帧确认
+  tag 烤进画面）
+- 红线：零付费模型调用（总闸仍断开）；未碰 3080/~/.dsh；未做 Desktop 部署
+- Agent Note: .agents/notes/implemented/architecture/2026-10-22-p1-components-libraryref.md
+- 待简哥拍板：是否做一次真实 AI 点名测试（需另行授权调模型）
+
+## 2026-10-22 P1/P2 组件库排接（分支 p2-more-components）
+
+- P1 talkcraft：29 张真 props 卡注册表 + lint 白名单 + 26 词表选卡提示词；
+  库只读未改动；单元测试 14/14
+- 透明通道实测结论：**FAIL** —— 卡根节点画死整屏不透明底，整段渲染 + 透明
+  叠加路线当前形态走不通（证据 ~/workspace/p1b-verify/VERDICT.md）；渲染链路
+  记为阻塞，待简哥拍板是否做逐卡透明化改造
+- P2 shotcraft：typography/ui-entrance/data 三类 31 张卡参数化改造 + 语义索引
+  + lint 白名单；单元测试 11/11；库原文件未改动
+- shotcraft 渲染实测：中文 PASS（无走样）；ProRes 4444 alpha PASS；
+  WebM VP9 alpha FAIL —— alpha 交付走 ProRes 4444
+- 核心门禁：LIBRARY_ALLOWLIST 开放 talkcraft + shotcraft（huashu 仍为设计资产
+  未开放）；内嵌 packagingPlanJs 同步再生；38/38 测试全绿
+- 红线：零付费模型调用；未碰 127.0.0.1:3080 与 ~/.dsh；未做 Desktop 部署
+- Agent Notes: notes/2026-10-22-p1-talkcraft.md, notes/2026-10-22-p2-shotcraft.md
+- 待简哥拍板：① talkcraft 透明化改造做不做 ② 是否做一次真实 AI 点名测试
+  （需另行授权调模型）

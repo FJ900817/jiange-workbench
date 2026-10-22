@@ -3,6 +3,20 @@
 const COMPONENT_TYPES = new Set(['title', 'highlight', 'info'])
 const MAX_SEGMENTS = 500
 const MAX_PROPOSALS = 8
+/** Libraries a proposal may reference. P1/P2 open talkcraft + shotcraft; huashu stays design-asset. */
+const LIBRARY_LIBS = new Set(['aikou', 'talkcraft', 'shotcraft', 'huashu'])
+const LIBRARY_ALLOWLIST = new Set(['aikou', 'talkcraft', 'shotcraft'])
+/**
+ * Locked styles per preset and component bucket. The AI may only change
+ * text/timing/position; any invented color or size is rejected ("换文字保样式").
+ */
+const STYLE_PRESETS = {
+  'neutral-editorial': {
+    title: { fontSize: 52, color: '#ffffff', accent: '#e6b94e', background: '#1f2728' },
+    highlight: { fontSize: 36, color: '#ffffff', accent: '#e6b94e', background: '#1f2728' },
+    info: { fontSize: 30, color: '#ffffff', accent: '#e6b94e', background: '#1f2728' },
+  },
+}
 
 function parseTimestamp(value) {
   const match = /^(?:(\d{2,}):)?(\d{2}):(\d{2})[,.](\d{3})$/.exec(value.trim())
@@ -61,6 +75,7 @@ export function createFixturePlan({ duration, width, height, transcript, stylePr
         content: { text: phrase },
         style: { fontSize: 52, color: '#ffffff', accent: '#e6b94e', background: '#1f2728' },
         animation: 'fadeUp',
+        libraryRef: { lib: 'aikou', componentId: 'tag', params: { label: phrase, en: 'NOT QUITE THERE', icon: 'warn', x: 40, y: 300 } },
       })
     } else if (proposals.length < MAX_PROPOSALS && /不要急着改指令|不要急着换工具/u.test(phrase)) {
       proposals.push({
@@ -75,6 +90,7 @@ export function createFixturePlan({ duration, width, height, transcript, stylePr
         content: { text: phrase },
         style: { fontSize: 36, color: '#ffffff', accent: '#e6b94e', background: '#1f2728' },
         animation: 'fadeUp',
+        libraryRef: { lib: 'aikou', componentId: 'qa', params: { q: '改指令？换工具？', a: '先别急', dir: -1, x: 50, y: 320 } },
       })
     } else if (proposals.length < MAX_PROPOSALS && /标准里面/u.test(phrase)) {
       proposals.push({
@@ -89,6 +105,7 @@ export function createFixturePlan({ duration, width, height, transcript, stylePr
         content: { title: '你的标准', body: phrase },
         style: { fontSize: 30, color: '#ffffff', accent: '#e6b94e', background: '#1f2728' },
         animation: 'fadeUp',
+        libraryRef: { lib: 'aikou', componentId: 'numlist', params: { label: '你的标准', items: [{ no: '01', lines: [{ text: phrase, at: segment.start }] }], x: 1330, y: 230, w: 540 } },
       })
     } else if (proposals.length < MAX_PROPOSALS && /还得你自己来做判断/u.test(phrase)) {
       proposals.push({
@@ -103,6 +120,7 @@ export function createFixturePlan({ duration, width, height, transcript, stylePr
         content: { text: phrase },
         style: { fontSize: 52, color: '#ffffff', accent: '#e6b94e', background: '#1f2728' },
         animation: 'fadeUp',
+        libraryRef: { lib: 'aikou', componentId: 'tag', params: { label: '还得你自己判断', en: 'HUMAN JUDGMENT', icon: 'user', x: 40, y: 300 } },
       })
     }
   }
@@ -124,6 +142,8 @@ export function validatePackagingPlan(plan) {
   if (!plan || plan.schemaVersion !== 1 || plan.generatedBy !== 'fixture-keyword-rules' || plan.model !== null || plan.requiresVisualReview !== true) throw new Error('包装方案来源、人工复核要求或版本无效')
   const { duration, width, height } = plan.video ?? {}
   if (![duration, width, height].every(Number.isFinite) || duration <= 0 || width < 16 || height < 16) throw new Error('包装方案视频参数无效')
+  const lockedStyles = STYLE_PRESETS[plan.stylePreset]
+  if (!lockedStyles) throw new Error(`不支持的风格预设：${plan.stylePreset}`)
   const segments = new Map((plan.transcript?.segments ?? []).map(segment => [segment.id, segment]))
   if (!segments.size || !Array.isArray(plan.proposals) || plan.proposals.length > MAX_PROPOSALS) throw new Error('字幕证据或包装组件数量无效')
   const proposalIds = new Set()
@@ -141,6 +161,20 @@ export function validatePackagingPlan(plan) {
     const text = item.componentType === 'info' ? item.content?.title + item.content?.body : item.content?.text
     if (typeof text !== 'string' || !text.trim() || text.length > 400) throw new Error(`组件 ${item.proposalId} 文案无效`)
     if (!['fadeUp', 'none'].includes(item.animation)) throw new Error(`组件 ${item.proposalId} 动画无效`)
+    const locked = lockedStyles[item.componentType]
+    const style = item.style ?? {}
+    if (locked.fontSize !== style.fontSize || locked.color !== style.color || locked.accent !== style.accent || locked.background !== style.background) {
+      throw new Error(`组件 ${item.proposalId} 的样式不在锁定预设内：只许换文字/时间/位置`)
+    }
+    if (item.libraryRef !== undefined) {
+      const ref = item.libraryRef
+      if (!ref || typeof ref !== 'object' || Array.isArray(ref)) throw new Error(`组件 ${item.proposalId} 的组件引用无效`)
+      if (!LIBRARY_LIBS.has(ref.lib)) throw new Error(`组件 ${item.proposalId} 引用的组件库不受支持：${ref.lib}`)
+      if (!LIBRARY_ALLOWLIST.has(ref.lib)) throw new Error(`组件 ${item.proposalId} 引用的组件库 ${ref.lib} 尚未开放`)
+      if (typeof ref.componentId !== 'string' || !ref.componentId.trim()) throw new Error(`组件 ${item.proposalId} 的组件引用缺少组件 ID`)
+      if (!ref.params || typeof ref.params !== 'object' || Array.isArray(ref.params)) throw new Error(`组件 ${item.proposalId} 的组件引用缺少参数包`)
+      if (ref.state !== undefined && typeof ref.state !== 'string') throw new Error(`组件 ${item.proposalId} 的组件引用画面状态无效`)
+    }
   }
   for (let time = 0; time < duration; time += 0.05) {
     const visible = plan.proposals.filter(item => time >= item.start && time < item.start + item.duration)
@@ -178,6 +212,7 @@ export function applyPackagingPlan(project, plan, selectedProposalIds = plan.pro
       background: proposal.style.background,
       animation: proposal.animation,
       hidden: false,
+      ...(proposal.libraryRef ? { libraryRef: proposal.libraryRef } : {}),
       x: proposal.position.x,
       y: proposal.position.y,
       width: proposal.position.width,

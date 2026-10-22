@@ -12,6 +12,14 @@ export interface PackagingTranscript {
   readonly segments: readonly TranscriptSegment[]
 }
 
+/** Reference to a real component from one of the four component libraries (P1/P2: aikou + talkcraft + shotcraft). */
+export interface LibraryRef {
+  readonly lib: 'aikou' | 'talkcraft' | 'shotcraft' | 'huashu'
+  readonly componentId: string
+  readonly params: Record<string, unknown>
+  readonly state?: string
+}
+
 export interface PackagingProposal {
   readonly proposalId: string
   readonly componentType: 'title' | 'highlight' | 'info'
@@ -24,6 +32,7 @@ export interface PackagingProposal {
   readonly content: { text?: string; title?: string; body?: string }
   readonly style: { fontSize: number; color: string; accent: string; background: string }
   readonly animation: 'fadeUp' | 'none'
+  readonly libraryRef?: LibraryRef
   _selected?: boolean
 }
 
@@ -40,6 +49,20 @@ export interface PackagingPlan {
 }
 
 export function parseSubtitles(source: 'srt' | 'vtt', text: string, mediaDuration: number): TranscriptSegment[]
-export function createFixturePlan(input: { duration: number; width: number; height: number; transcript: PackagingTranscript; stylePreset?: string }): PackagingPlan
+export function createFixturePlan(input: {
+  duration: number
+  width: number
+  height: number
+  transcript: PackagingTranscript
+  stylePreset?: string
+}): PackagingPlan
 export function validatePackagingPlan(plan: PackagingPlan): PackagingPlan
-export function applyPackagingPlan<T extends { components: readonly Record<string, unknown>[] }>(project: T, plan: PackagingPlan, selectedProposalIds?: readonly string[]): { project: T & { components: readonly Record<string, unknown>[]; packagingPlanRecord: Record<string, unknown> }; addedIds: string[]; skippedProposalIds: string[] }
+export function applyPackagingPlan<T extends { components: readonly Record<string, unknown>[] }>(
+  project: T,
+  plan: PackagingPlan,
+  selectedProposalIds?: readonly string[],
+): {
+  project: T & { components: readonly Record<string, unknown>[]; packagingPlanRecord: Record<string, unknown> }
+  addedIds: string[]
+  skippedProposalIds: string[]
+}

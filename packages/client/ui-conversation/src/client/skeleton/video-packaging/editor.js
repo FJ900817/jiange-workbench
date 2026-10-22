@@ -1,5 +1,6 @@
 import { applyPackagingPlan, createFixturePlan, parseSubtitles, validatePackagingPlan } from '/modules/packaging-plan.mjs'
 import { applyAssetRecommendation, createAssetRecommendations, hasClearReusePermission } from '/modules/visual-asset-retrieval.mjs'
+import { AIKOU_CSS, renderAikouComponent, renderAikouOverlayPng } from '/modules/aikou-components.mjs'
 
 const $ = selector => document.querySelector(selector)
 const video = $('#source-video')
@@ -63,8 +64,32 @@ function defaultProject(metadata) {
   }
 }
 
+/**
+ * Render one AI口播包装库 component to a full-canvas PNG and register it as
+ * the Host overlay asset. The FFmpeg chain loops a still PNG per component,
+ * so the still is taken mid-component (enter animation done, exit not begun).
+ * The PNG covers the whole canvas because aikou positions are authored in the
+ * component params; the item box is normalized to the canvas accordingly.
+ */
+async function syncAikouOverlayAsset(item) {
+  item.x = 0; item.y = 0; item.width = project.width; item.height = project.height
+  const signature = JSON.stringify(['aikou', item.libraryRef.componentId, item.libraryRef.params, item.libraryRef.state ?? null, project.width, project.height])
+  if (item.overlayAssetId && item.overlaySignature === signature && project.mediaAssets.some(asset => asset.id === item.overlayAssetId)) return
+  const ref = { ...item.libraryRef, params: { ...(item.libraryRef.params ?? {}), t0: 0, t1: item.duration } }
+  const still = Math.min(Math.max(1, item.duration * 0.5), Math.max(0.6, item.duration - 0.35))
+  const blob = await renderAikouOverlayPng(ref, project.width, project.height, still)
+  const response = await fetch(`/api/overlay/${encodeURIComponent(item.id)}`, { method: 'POST', headers: { 'content-type': 'image/png' }, body: blob })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.error ?? '包装 PNG 未能写入 Host')
+  item.overlayAssetId = result.asset.id
+  item.overlaySignature = signature
+  project.mediaAssets ??= []
+  if (!project.mediaAssets.some(asset => asset.id === result.asset.id)) project.mediaAssets.push(projectAssetSnapshot(result.asset))
+}
+
 async function syncTextOverlayAssets() {
   for (const item of project.components.filter(component => component.type !== 'asset')) {
+    if (item.libraryRef && item.libraryRef.lib === 'aikou') { await syncAikouOverlayAsset(item); continue }
     const signature = JSON.stringify([item.type, item.text, item.title, item.body, item.x, item.y, item.width, item.height, item.fontSize, item.color, item.accent, item.background, item.visualStyle, item.emphasisText])
     if (item.overlayAssetId && item.overlaySignature === signature && project.mediaAssets.some(asset => asset.id === item.overlayAssetId)) continue
     const canvas = document.createElement('canvas')
@@ -666,8 +691,39 @@ function addComponent(type) {
   setDirty()
 }
 
+let aikouCssReady = false
+
+function ensureAikouCss() {
+  if (aikouCssReady || typeof AIKOU_CSS !== 'string') return
+  const style = document.createElement('style')
+  style.id = 'aikou-components'
+  style.textContent = AIKOU_CSS
+  document.head.append(style)
+  aikouCssReady = true
+}
+
+/**
+ * Preview markup for an AI口播包装库 component (libraryRef.lib === 'aikou').
+ * Positions are authored in the component params (engine coordinates), so the
+ * wrapper spans the whole stage and the inner canvas maps project pixels 1:1
+ * before the stage scale. Falls back to a visible error box, never blank.
+ */
+function aikouMarkup(item, time, scale) {
+  ensureAikouCss()
+  const ref = { ...item.libraryRef, params: { ...(item.libraryRef.params ?? {}), t0: 0, t1: item.duration } }
+  let body = ''
+  try {
+    body = renderAikouComponent(ref, Math.max(0, time - item.start))
+  } catch (error) {
+    body = `<div class="aikou-fallback">AI口播组件渲染失败：${escapeHtml(error.message)}</div>`
+  }
+  return `<div class="overlay-item aikou-layer" data-overlay="${item.id}" style="left:0;top:0;width:100%;height:100%;z-index:${item.layer};">`
+    + `<div class="aikou-canvas" style="width:${project.width}px;height:${project.height}px;transform:scale(${scale});">${body}</div></div>`
+}
+
 function componentMarkup(item, time, scale) {
   if (!active(item, time)) return ''
+  if (item.libraryRef && item.libraryRef.lib === 'aikou') return aikouMarkup(item, time, scale)
   const elapsed = Math.max(0, time - item.start)
   const fade = item.animation !== 'none' ? Math.min(1, elapsed / 0.28, (item.start + item.duration - time) / 0.2) : 1
   const yOffset = item.animation === 'fadeUp' ? 14 * (1 - Math.min(1, elapsed / 0.35)) : 0
@@ -770,7 +826,7 @@ function renderTimeline() {
     const left = item.start / timelineDuration * 100
     const width = item.duration / timelineDuration * 100
     const asset = item.type === 'asset' ? project.mediaAssets.find(value => value.id === item.assetId) : null
-    const label = asset ? asset.originalName : item.type === 'info' ? item.title : item.text.split('\n')[0]
+    const label = asset ? asset.originalName : item.libraryRef && item.libraryRef.lib === 'aikou' ? `AI口播 ${item.libraryRef.componentId}` : item.type === 'info' ? item.title : item.text.split('\n')[0]
     return `<div class="track-row"><div class="track-label track-name" data-kind="${item.type}">${lane.name}</div><div class="track-lane component-lane"><div class="clip${selected}" data-clip="${item.id}" data-kind="${item.type}" style="left:${left}%;width:${width}%"><i class="clip-handle left"></i><span>${escapeHtml(label)}</span><i class="clip-handle right"></i></div></div></div>`
   }).join('')
   $('#component-count').textContent = `${project?.components.length ?? 0} 个包装组件`

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ConversationInjected } from '../contract/slots.ts'
-import { editorHtml, editorCss, editorJs, packagingPlanJs, assetRetrievalJs } from './video-packaging/embedded-editor.ts'
+import { editorHtml, editorCss, editorJs, packagingPlanJs, assetRetrievalJs, aikouComponentsJs } from './video-packaging/embedded-editor.ts'
 import { videoPackagingTheme } from './video-packaging/video-packaging-theme.ts'
 import css from './MediaCreationStudio.module.css'
 
@@ -99,7 +99,7 @@ export function VideoPackagingEditor({ bridge, onBack }: { readonly bridge: Vide
 
 function buildDocument(): string {
   const app = editorJs.replace(/^import .*\n/gm, '')
-  const helpers = `${packagingPlanJs}\n${assetRetrievalJs}`.replace(/^import .*\n/gm, '').replace(/^export /gm, '')
+  const helpers = `${packagingPlanJs}\n${assetRetrievalJs}\n${aikouComponentsJs}`.replace(/^import .*\n/gm, '').replace(/^export /gm, '')
   const runtime = `<script>const __pending=new Map();let __seq=0;window.addEventListener('message',e=>{if(e.data?.kind==='dsh-video-packaging-response'){const p=__pending.get(e.data.id);if(p){__pending.delete(e.data.id);const body=e.data.body instanceof Blob?e.data.body:typeof e.data.body==='string'?e.data.body:JSON.stringify(e.data.body);p(new Response(body,{status:e.data.status,headers:{'content-type':e.data.contentType||(e.data.body instanceof Blob?'application/octet-stream':'application/json')}}))}}else if(e.data?.kind==='dsh-video-packaging-open'){window.__DSH_PROJECT_ID__=e.data.projectId;location.reload()}else if(e.data?.kind==='dsh-video-packaging-panels'){document.body.classList.toggle('dsh-hide-library',Boolean(e.data.library));document.body.classList.toggle('dsh-hide-inspector',Boolean(e.data.inspector))}});window.fetch=(url,init={})=>new Promise(resolve=>{const id=String(++__seq);__pending.set(id,resolve);parent.postMessage({kind:'dsh-video-packaging-request',id,url:String(url),method:init.method||'GET',headers:Object.fromEntries(new Headers(init.headers||{}).entries()),body:init.body??null},'*')});window.__DSH_PROJECT_ID__=${JSON.stringify(new URLSearchParams(location.search).get('videoPackagingProject') ?? '')};</script><script>${safeScript(helpers)}\n${safeScript(app)}</script>`
   const responsive = `
     body{min-width:0!important}
@@ -155,7 +155,13 @@ function buildDocument(): string {
 
 function safeScript(source: string): string { return source.replaceAll('</script', '<\\/script') }
 
-async function dispatch(request: RequestMessage, bridge: VideoPackagingBridge, activeProjectId: string, openProject: (id: string) => void, outputAssetId: { current: string | null }): Promise<Result> {
+async function dispatch(
+  request: RequestMessage,
+  bridge: VideoPackagingBridge,
+  activeProjectId: string,
+  openProject: (id: string) => void,
+  outputAssetId: { current: string | null },
+): Promise<Result> {
   const { url, method } = request
   if (url === '/api/config') return json({ testOnlyMode: true })
   if (url === '/api/ai/models' && method === 'GET') return json({ models: await bridge.aiModels() })
@@ -255,7 +261,13 @@ function mapAssets(assets: readonly import('@deepseek-ai/dsh-business-workbench/
 function mapAsset(asset: import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingAsset, metadata: AssetMetadata = {}) {
   return { id: asset.assetId, name: asset.name, type: 'static', mimeType: 'image/png', width: asset.width, height: asset.height, duration: null, hasAlpha: asset.hasAlpha, bytes: asset.bytes, sha256: asset.sha256, status: 'test-only-approved', testOnly: true, userConfirmed: false, source: 'P5-07 隔离测试 Host 上传', licenseStatus: '不代表正式授权或用户批准', category: metadata.category ?? '技术测试', purposeTags: metadata.purposeTags ?? [], styleTags: metadata.styleTags ?? [], recommendedScenes: metadata.recommendedScenes ?? [], defaultDisplay: metadata.defaultDisplay ?? { width: Math.round(asset.width * 0.32), height: Math.round(asset.height * 0.32), duration: 4 } }
 }
-type AssetMetadata = { readonly category?: string; readonly purposeTags?: readonly string[]; readonly styleTags?: readonly string[]; readonly recommendedScenes?: readonly string[]; readonly defaultDisplay?: { readonly width: number; readonly height: number; readonly duration: number } }
+type AssetMetadata = {
+  readonly category?: string
+  readonly purposeTags?: readonly string[]
+  readonly styleTags?: readonly string[]
+  readonly recommendedScenes?: readonly string[]
+  readonly defaultDisplay?: { readonly width: number; readonly height: number; readonly duration: number }
+}
 function readAssetMetadata(value?: string): AssetMetadata {
   if (!value) return {}
   try {
