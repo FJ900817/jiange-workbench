@@ -134,3 +134,21 @@
 - 红线：零付费模型调用；未碰 127.0.0.1:3080 与 ~/.dsh；未做 Desktop 部署；
   三套库原文件未改动（只读）
 - Agent Note: .agents/notes/implemented/architecture/2026-10-22-p2-library-wiring.md
+
+## 2026-10-22 talkcraft 透明化试点（4 张卡，分支 p2-more-components）
+
+- 用户拍板走 A 路线（抠白底做透明叠加），先试点 4 张：title-demote-to-label
+  （标题类）/ unit-grid-proportion（数据类）/ filmstrip-conveyor（清单类）/
+  info-card-assemble（信息卡，P1 VERDICT 基准卡）
+- talkcraft-cards/：4 张改编（只去根 AbsoluteFill 整屏底 → transparent，
+  卡片本体/时序/props 接口逐字保留）；原库文件零修改
+- 注册表：4 张加 alphaFile 标记；其余 25 张无标记（试点范围外）
+- 豁免：.oxlintrc.json / .oxlintrc.staged.json / tsconfig exclude 照抄
+  shotcraft-cards 加 **/talkcraft-cards/**
+- 验证：renderFrames PNG 四角 alpha=0（背景 100% 去掉）；整帧透明
+  Tdl 84.4% / Ugp 83.8% / Fsc 71.3% / Ica 58.0%（剩余为卡片本体）；
+  FFmpeg 叠加演示截图 ~/workspace/p1b-verify/pilot/overlay-Pilot*.png（4 张）
+- 测试：新增 talkcraft-alpha.spec.ts 5/5；相关 4 文件 39/39 全过
+- Agent Note: .agents/notes/implemented/architecture/2026-10-22-talkcraft-alpha-pilot.md
+  （extends notes/2026-10-22-p1-talkcraft.md §1 缺口①）
+- 红线：零付费模型调用；未碰 127.0.0.1:3080 与 ~/.dsh；未做 Desktop 部署

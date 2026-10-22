@@ -14,6 +14,7 @@
     "website/.generated/**",
     "vendor/**",
     "**/shotcraft-cards/**",
+    "**/talkcraft-cards/**",
     "native/**",
     "**/*.js",
     "**/*.mjs",

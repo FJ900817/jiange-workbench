@@ -83,6 +83,7 @@
   ],
   "exclude": [
     "**/*.legacy.*",
-    "src/client/skeleton/video-packaging/shotcraft-cards"
+    "src/client/skeleton/video-packaging/shotcraft-cards",
+    "src/client/skeleton/video-packaging/talkcraft-cards"
   ]
 }

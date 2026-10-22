@@ -24,6 +24,7 @@
     "website/.generated/**",
     "vendor/**", // Vendored source keeps upstream style and idioms.
     "**/shotcraft-cards/**", // Adapted third-party Remotion render assets (Apache-2.0); consumed by the isolated render service, excluded from the TS program.
+    "**/talkcraft-cards/**", // Adapted third-party Remotion render assets (PolyForm Noncommercial 1.0.0); transparent-background pilot adaptations, consumed by the isolated render service, excluded from the TS program.
     "native/**", // The imported landlock-run subtree has its own gates; see native/README.md.
     "**/*.js",
     "**/*.mjs",

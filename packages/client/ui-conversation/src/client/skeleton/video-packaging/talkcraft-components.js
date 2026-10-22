@@ -147,6 +147,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'filmstrip-conveyor': {
     slug: 'filmstrip-conveyor',
+    alphaFile: 'talkcraft-cards/filmstrip-conveyor.tsx', // 透明改编版（试点）：根整屏底已去掉，叠加渲染时用此文件
     name: "传送带列举 + 减速停靠",
     oneliner: "六格 240×160 白边卡接成一条传送带匀速左行 176px/s，经过中线的格按\"离中线的距离\"每帧连续放大到 1.08 并提亮（不是到点触发）；讲到第四格时按位置-时间分段积分减速（匀速 → 0.5s 减速 → 0.25× 慢速 1.4s → 0.6s 加速 → 匀速），减速结束点正好是\"第四格居中\"；六格全部过完中线后整体退场",
     category: "素材呈现",
@@ -223,6 +224,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'info-card-assemble': {
     slug: 'info-card-assemble',
+    alphaFile: 'talkcraft-cards/info-card-assemble.tsx', // 透明改编版（试点）：根整屏底已去掉，叠加渲染时用此文件
     name: "信息卡逐字段自建",
     oneliner: "一张信息卡（书 / 工具 / 人物）像被结构化抽取一样自己长出来：封面 rise → 标题 rise → 三枚标签 pop → 价格行 rise → 三行要点逐行 rise、其中两行被马克底块 5 帧从左刷过 → 三块色卡 pop；相邻字段只隔 2 帧（配方帧）、单字段行程 0.5s 远大于间隔所以画面是\"涌\"不是\"点\"，整卡全程极慢前推 1→1.06",
     category: "素材呈现",
@@ -444,6 +446,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'title-demote-to-label': {
     slug: 'title-demote-to-label',
+    alphaFile: 'talkcraft-cards/title-demote-to-label.tsx', // 透明改编版（试点）：根整屏底已去掉，叠加渲染时用此文件
     name: "标题降格成标签",
     oneliner: "章节标题\"第二步 · 拆解需求\"56px 居中解糊显影（blur 12→0，0.4s）、站稳 0.7s，然后一条 power2.inOut 曲线 0.67s 同时完成\"缩到 0.4 倍 + 飞到左上角 (80,72)\"落成 22px 小节标签（居中修正量随补间同步归零）；降格进行到 0.4s 时三条内容块已开始在其下方按口播逐条生长（clip 从 35% 宽展开 + 上移 28px，0.55s 一条）——标题不消失，变成常驻路标；末条落定后静置 2.7s 同收",
     category: "字幕花字",
@@ -460,6 +463,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'unit-grid-proportion': {
     slug: 'unit-grid-proportion',
+    alphaFile: 'talkcraft-cards/unit-grid-proportion.tsx', // 透明改编版（试点）：根整屏底已去掉，叠加渲染时用此文件
     name: "点阵比例图",
     oneliner: "100 个小方格从网格中心分环长出（每环 4 帧 + ≤3 帧确定性抖动，1.1s 铺满；只做 opacity + scale .8→1，无位移），然后从左上起按阅读顺序逐格染成强调色（0.035s 一格），右侧 128px 大数字与染色同一时钟 0→37，图例最后浮出——把\"37%\"摊成 37 个可数的个体",
     category: "数据信息图",
