@@ -1,5 +1,11 @@
 # talkcraft 透明分发接线（P1 真正闭环）
 
+> **后续（2026-10-22）**：渲染器包 `packages/business/talkcraft-render/` 已更名为
+> `packages/business/library-render/`（aikou/shotcraft 接线时泛化为三库共用），
+> 触发模块与 CLI 参数不变。详见
+> [aikou/shotcraft 生产渲染接线](./2026-10-22-aikou-shotcraft-render-wiring.md)。
+> 本 note 的决策内容（透明分发）仍然有效。
+
 ## 背景
 
 `talkcraft-dispatch.js`（`resolveTalkcraftRenderTarget`）已就绪但没有任何生产

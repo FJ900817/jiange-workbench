@@ -1593,7 +1593,7 @@ importers:
         specifier: workspace:^
         version: link:../../core/tools
 
-  packages/business/talkcraft-render:
+  packages/business/library-render:
     dependencies:
       '@remotion/bundler':
         specifier: 4.0.519
@@ -1601,6 +1601,9 @@ importers:
       '@remotion/renderer':
         specifier: 4.0.519
         version: 4.0.519(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      playwright-core:
+        specifier: 1.61.1
+        version: 1.61.1
       react:
         specifier: 19.2.8
         version: 19.2.8

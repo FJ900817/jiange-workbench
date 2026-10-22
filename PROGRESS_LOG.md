@@ -203,3 +203,35 @@
 - Agent Note: .agents/notes/implemented/architecture/2026-10-22-talkcraft-render-wiring.md
 - 缺口：卡片按原生 960×540 叠加于组件 x/y（AI 给的 w/h 未缩放）；整屏渲染
   管线未建；预览层无卡片真实预览；渲染器包需 pnpm install
+
+## 2026-10-22 aikou/shotcraft 生产渲染接线（分支 p2-more-components）
+
+- 缺口：runRender 只接了 talkcraft；aikou/shotcraft 能点名但渲染不出
+- `packages/business/talkcraft-render/` 更名为 `packages/business/library-render/`
+  （预发布阶段允许更名；所有引用同步更新；旧环境变量 TALKCRAFT_CHROMIUM_PATH
+  仍兼容）：新增 `render-aikou.mjs`（playwright-core headless Chromium 加载内联
+  aikou-components.js，调 renderAikouOverlayPng 出整幅画布 PNG）与共享的
+  `resolve-chromium.mjs`；`render-card.mjs` 泛化支持 shotcraft 形态
+  （--export-name/--defaults-export/--duration-export，具名 export 无 meta 时
+  走显式宽高帧率）；playwright-core 1.61.1 新增依赖
+- 新注册表 `shotcraft-cards/shotcraft-components.js`（+ .d.ts）：31 张卡的
+  file/exportName/defaultsExport/durationExport（2 张特例硬编码：
+  type-entrance-moves→LetterDropPhysics、typewriter-moves→TypewriterErrorRetype）
+- Host 新增 `src/video-packaging-aikou.ts`（isAikouComponent/createAikouRenderJob/
+  renderAikouStillPng；校验镜像 renderAikouComponent 的白名单+必填参数）与
+  `src/video-packaging-shotcraft.ts`（isShotcraftComponent/createShotcraftRenderJob/
+  renderShotcraftStillPng；帧号上界由渲染器按卡片真实总帧数钳制）
+- `src/video-packaging.ts`：runRender 按 libraryRef.lib 三路分发（未知 lib 中文
+  大声失败）；aikou/shotcraft 渲整幅画布，FFmpeg 叠加定位归零（x=0,y=0，不改
+  原文档）；编辑器 PNG 上传豁免推广到三库（isLibraryComponent）
+- 测试：aikou 6/6、shotcraft 6/6、talkcraft 8/8 回归、video-packaging 2/2 回归、
+  shotcraft-lint 13/13（含新注册表一致性）；tsc 干净；oxlint（staged 配置）0 错误
+- 端到端冒烟：aikou tag 1920x1080（4.8s）/ shotcraft blur-slide 1920x1080
+  （24.9s）/ talkcraft 回归 960x540，四角 alpha 全 0；Host 触发模块全链路
+  （createJob→spawn CLI→PNG）对 aikou/shotcraft 逐条验证通过
+- 红线：零付费模型调用；未碰 127.0.0.1:3080 与 ~/.dsh；未做 Desktop 部署；
+  video-talkcraft/video-shotcraft/huashu-motion/aizmt 原文件零修改
+- Agent Note: .agents/notes/implemented/architecture/2026-10-22-aikou-shotcraft-render-wiring.md
+- 缺口：shotcraft 卡按 1920x1080 设计、渲染用项目画布尺寸（非 16:9 项目相对
+  布局自适应、绝对字号不缩放）；fadeUp 动画在整幅画布叠加上仍有 14px 位移；
+  预览层无 aikou/shotcraft 真实预览；渲染器包需 pnpm install

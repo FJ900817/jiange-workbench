@@ -87,3 +87,29 @@ describe('shotcraft libraryRef lint (self-built plans, no model calls)', () => {
     expect(() => validateShotcraftLibraryRefs({} as never)).toThrow('缺少提案列表')
   })
 })
+
+describe('shotcraft 渲染注册表（shotcraft-components.js）', () => {
+  it('31 个白名单 ID 都有渲染注册项，且无多余项', async () => {
+    const { SHOTCRAFT_COMPONENTS } = await import(
+      '../src/client/skeleton/video-packaging/shotcraft-cards/shotcraft-components.js',
+    )
+    const ids = Object.keys(SHOTCRAFT_COMPONENTS)
+    expect(ids).toHaveLength(31)
+    for (const id of SHOTCRAFT_COMPONENT_IDS) {
+      expect(ids).toContain(id)
+    }
+  })
+
+  it('每项的导出名都是合法 JS 标识符，文件路径以后缀 .tsx 结尾', async () => {
+    const { SHOTCRAFT_COMPONENTS } = await import(
+      '../src/client/skeleton/video-packaging/shotcraft-cards/shotcraft-components.js',
+    )
+    const ident = /^[A-Za-z_$][A-Za-z0-9_$]*$/
+    for (const [id, entry] of Object.entries(SHOTCRAFT_COMPONENTS)) {
+      expect(entry.file.endsWith('.tsx'), `${id} file`).toBe(true)
+      expect(ident.test(entry.exportName), `${id} exportName`).toBe(true)
+      expect(ident.test(entry.defaultsExport), `${id} defaultsExport`).toBe(true)
+      expect(ident.test(entry.durationExport), `${id} durationExport`).toBe(true)
+    }
+  })
+})

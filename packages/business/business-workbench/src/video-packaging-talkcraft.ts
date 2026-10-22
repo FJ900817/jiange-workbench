@@ -5,7 +5,7 @@
  * Host 的 runRender 在解析文字叠加层时，对 libraryRef.lib === 'talkcraft'
  * 的组件调用本模块——先经 talkcraft-dispatch 把引用翻译成渲染目标
  * （叠加模式走透明改编版 alphaFile；整屏模式走原库路径），再驱动隔离
- * 渲染器（packages/business/talkcraft-render）把卡片渲成带透明通道的
+ * 渲染器（packages/business/library-render）把卡片渲成带透明通道的
  * PNG，交给 FFmpeg 叠加链路。编辑器不为 talkcraft 组件上传 PNG。
  */
 
@@ -127,12 +127,12 @@ export function createTalkcraftRenderJob(
   })
 }
 
-/** 隔离渲染器 CLI（packages/business/talkcraft-render/render-card.mjs）绝对路径。 */
+/** 隔离渲染器 CLI（packages/business/library-render/render-card.mjs）绝对路径。 */
 function rendererCliPath(): string {
   const here = dirname(fileURLToPath(import.meta.url))
-  const cli = join(here, '..', '..', 'talkcraft-render', 'render-card.mjs')
+  const cli = join(here, '..', '..', 'library-render', 'render-card.mjs')
   if (!existsSync(cli)) {
-    fail(`隔离渲染器未安装：${cli} 不存在，请先安装 packages/business/talkcraft-render`)
+    fail(`隔离渲染器未安装：${cli} 不存在，请先安装 packages/business/library-render`)
   }
   return cli
 }

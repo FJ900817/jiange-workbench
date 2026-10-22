@@ -17,7 +17,25 @@ import {
   isTalkcraftComponent,
   renderTalkcraftStillPng,
 } from './video-packaging-talkcraft.ts'
+import type { TalkcraftLibraryRef } from './video-packaging-talkcraft.ts'
+import {
+  createAikouRenderJob,
+  isAikouComponent,
+  renderAikouStillPng,
+} from './video-packaging-aikou.ts'
+import type { AikouLibraryRef } from './video-packaging-aikou.ts'
+import {
+  createShotcraftRenderJob,
+  isShotcraftComponent,
+  renderShotcraftStillPng,
+} from './video-packaging-shotcraft.ts'
+import type { ShotcraftLibraryRef } from './video-packaging-shotcraft.ts'
 import type { VideoPackagingAsset, VideoPackagingProject, VideoPackagingRenderTask } from './types.ts'
+
+/** 组件是否带 Host 隔离渲染的库引用（talkcraft/aikou/shotcraft 任一）。 */
+function isLibraryComponent(component: unknown): boolean {
+  return isTalkcraftComponent(component) || isAikouComponent(component) || isShotcraftComponent(component)
+}
 
 const UUID = z.string().uuid()
 const SHA256 = z.string().regex(/^[a-f0-9]{64}$/)
@@ -46,7 +64,7 @@ const assetComponent = componentBase.extend({
 const textComponent = componentBase.extend({
   type: z.enum(['title', 'highlight', 'info']),
   hidden: z.boolean().optional(),
-  // talkcraft 组件由 Host 隔离渲染器渲染，编辑器不上传 PNG，因此可选。
+  // 库组件（talkcraft/aikou/shotcraft）由 Host 隔离渲染器渲染，编辑器不上传 PNG，因此可选。
   overlayAssetId: UUID.optional(),
 }).passthrough()
 const p5AssetReference = z.object({
@@ -109,8 +127,8 @@ const p5DocumentSchema = z.object({
     if (component.type === 'asset' && !assetIds.has(component.assetId)) {
       context.addIssue({ code: 'custom', path: ['components'], message: 'asset component does not name a project asset' })
     }
-    if (component.type !== 'asset' && !isTalkcraftComponent(component)) {
-      // talkcraft 组件由 Host 隔离渲染器渲染，不要求预上传 PNG。
+    if (component.type !== 'asset' && !isLibraryComponent(component)) {
+      // 库组件由 Host 隔离渲染器渲染，不要求预上传 PNG。
       const overlayAssetId = component.overlayAssetId
       if (overlayAssetId === undefined || !assetIds.has(overlayAssetId)) {
         context.addIssue({ code: 'custom', path: ['components'], message: 'text component overlay does not name a project PNG asset' })
@@ -544,32 +562,64 @@ export class VideoPackagingStore {
     let record: VideoPackagingRenderTask = Object.freeze({ ...task, status: 'running', updatedAt: now })
     await this.renders.put(record.renderTaskId, record)
     const temporary = join(this.renderRoot, `render-${record.renderTaskId}.partial.mp4`)
-    // talkcraft 卡片由 Host 隔离渲染器渲染成透明 PNG（编辑器不上传）：先逐张渲染，
+    // 库组件由 Host 隔离渲染器渲染成透明 PNG（编辑器不上传）：先逐个渲染，
     // 再交给 FFmpeg 叠加链路。darkScene 来自面板「深色视频场景」开关（默认浅色）。
-    const talkcraftOverlays = new Map<string, string>()
+    // aikou/shotcraft 渲整幅画布（full-canvas），叠加定位归零；talkcraft 卡是
+    // 小尺寸构图，按组件 x/y 定位。未知 lib 大声失败。
+    const libraryOverlays = new Map<string, string>()
     const darkScene = project.document.darkScene === true
     try {
       const source = this.assetPath(this.requireAsset(project.sourceVideoAssetId))
       for (const component of project.document.components) {
-        if (component.type === 'asset' || !isTalkcraftComponent(component)) continue
+        if (component.type === 'asset') continue
+        const libraryRef = (component as { readonly libraryRef?: unknown }).libraryRef as
+          | { readonly lib?: unknown; readonly componentId?: string; readonly params?: Record<string, unknown> }
+          | undefined
+        const lib = libraryRef?.lib
+        if (lib === undefined) continue
         const stillSec = Math.min(Math.max(1, component.duration * 0.5), Math.max(0.6, component.duration - 0.35))
-        const libraryRef = (component as { readonly libraryRef?: unknown }).libraryRef as {
-          readonly lib: 'talkcraft'
-          readonly componentId?: string
-          readonly params?: Record<string, unknown>
+        let pngPath: string
+        if (lib === 'talkcraft') {
+          const job = createTalkcraftRenderJob(libraryRef as TalkcraftLibraryRef, { mode: 'overlay', darkScene, stillSec })
+          pngPath = join(this.renderRoot, `talkcraft-${component.id}.png`)
+          await renderTalkcraftStillPng(job, pngPath, { timeoutMs: this.config.renderTimeoutMs })
+        } else if (lib === 'aikou') {
+          const job = createAikouRenderJob(libraryRef as AikouLibraryRef, {
+            width: project.document.width,
+            height: project.document.height,
+            timeSec: stillSec,
+          })
+          pngPath = join(this.renderRoot, `aikou-${component.id}.png`)
+          await renderAikouStillPng(job, pngPath, { timeoutMs: this.config.renderTimeoutMs })
+        } else if (lib === 'shotcraft') {
+          const job = createShotcraftRenderJob(libraryRef as ShotcraftLibraryRef, {
+            width: project.document.width,
+            height: project.document.height,
+            stillSec,
+          })
+          pngPath = join(this.renderRoot, `shotcraft-${component.id}.png`)
+          await renderShotcraftStillPng(job, pngPath, { timeoutMs: this.config.renderTimeoutMs })
+        } else {
+          throw invalid(`不支持的组件库：${String(lib)}（仅支持 talkcraft/aikou/shotcraft）`)
         }
-        const job = createTalkcraftRenderJob(libraryRef, { mode: 'overlay', darkScene, stillSec })
-        const pngPath = join(this.renderRoot, `talkcraft-${component.id}.png`)
-        await renderTalkcraftStillPng(job, pngPath, { timeoutMs: this.config.renderTimeoutMs })
-        talkcraftOverlays.set(component.id, pngPath)
+        libraryOverlays.set(component.id, pngPath)
+      }
+      // 整幅画布类组件（aikou/shotcraft）的 FFmpeg 叠加定位归零；不改原文档。
+      const renderDocument = {
+        ...project.document,
+        components: project.document.components.map(component =>
+          isAikouComponent(component) || isShotcraftComponent(component)
+            ? { ...component, x: 0, y: 0 }
+            : component,
+        ),
       }
       const args = buildP5RenderArgs(
-        project.document as unknown as PackagingRenderProject,
+        renderDocument as unknown as PackagingRenderProject,
         source,
         temporary,
         assetId => this.assetPath(this.requireAsset(assetId)),
         (componentId) => {
-          const preRendered = talkcraftOverlays.get(componentId)
+          const preRendered = libraryOverlays.get(componentId)
           if (preRendered !== undefined) return preRendered
           const component = project.document.components.find(item => item.id === componentId)
           if (component === undefined || component.type === 'asset') throw invalid('P5 text overlay reference is invalid')
@@ -621,7 +671,7 @@ export class VideoPackagingStore {
         updatedAt: Date.now(),
       })
     }
-    for (const pngPath of talkcraftOverlays.values()) {
+    for (const pngPath of libraryOverlays.values()) {
       await rm(pngPath, { force: true })
     }
     await this.renders.put(record.renderTaskId, record)
