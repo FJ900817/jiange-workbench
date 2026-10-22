@@ -23,13 +23,19 @@ describe('aikou libraryRef lint (fixture only, no model calls)', () => {
 
   it('rejects an unknown component id outside the 8-component whitelist', () => {
     const plan = structuredClone(validPlan)
-    plan.proposals[0]!.libraryRef!.componentId = 'slam'
+    plan.proposals[0] = {
+      ...plan.proposals[0]!,
+      libraryRef: { ...plan.proposals[0]!.libraryRef!, componentId: 'slam' },
+    }
     expect(() => validateAikouLibraryRefs(plan)).toThrow('不在 8 个白名单组件内')
   })
 
   it('rejects a libraryRef from a library that P0 has not opened', () => {
     const plan = structuredClone(validPlan)
-    plan.proposals[0]!.libraryRef!.lib = 'talkcraft'
+    plan.proposals[0] = {
+      ...plan.proposals[0]!,
+      libraryRef: { ...plan.proposals[0]!.libraryRef!, lib: 'talkcraft' },
+    }
     expect(() => validateAikouLibraryRefs(plan)).toThrow('P0 只开放 aikou')
   })
 
@@ -63,7 +69,10 @@ describe('aikou libraryRef lint (fixture only, no model calls)', () => {
 
   it('rejects a self-filled style color through validatePackagingPlan', () => {
     const plan = structuredClone(validPlan)
-    plan.proposals[0]!.style = { ...plan.proposals[0]!.style, color: '#ff0000' }
+    plan.proposals[0] = {
+      ...plan.proposals[0]!,
+      style: { ...plan.proposals[0]!.style, color: '#ff0000' },
+    }
     expect(() => validatePackagingPlan(plan)).toThrow('锁定预设')
   })
 

@@ -10,7 +10,7 @@ import {
 /** 注册表条目：只取本测试关心的 alphaFile 字段 */
 type AlphaEntry = { alphaFile?: string }
 const entryOf = (id: string): AlphaEntry =>
-  (TALKCRAFT_COMPONENTS as Record<string, AlphaEntry>)[id]
+  (TALKCRAFT_COMPONENTS as Record<string, AlphaEntry>)[id]!
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const VP = resolve(HERE, '../src/client/skeleton/video-packaging')

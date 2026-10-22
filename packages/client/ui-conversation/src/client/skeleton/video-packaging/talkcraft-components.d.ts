@@ -20,6 +20,8 @@ export interface TalkcraftComponentSpec {
   semanticWords: string[]
   inputType: string[]
   propsSchema: TalkcraftPropSchema[]
+  /** 透明改编版文件（talkcraft-cards/ 下，29 张全有；见 2026-10-22 透明化全量）。 */
+  alphaFile?: string
 }
 
 export declare const TALKCRAFT_COMPONENTS: Record<string, TalkcraftComponentSpec>

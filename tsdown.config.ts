@@ -16,7 +16,14 @@ function isBuildFaceClient(value: unknown): boolean {
 export default defineConfig(({ env }) => {
   const client = isBuildFaceClient(env?.DSH_BUILD_FACE)
   return {
-    workspace: ['vendor/*', 'packages/*/*', 'apps/cli'],
+    // library-render 是纯 JS CLI（render-card.mjs / render-aikou.mjs），Host 运行时直接 spawn 源码，
+    // 无 TS 入口可打包，故从 workspace 构建中排除（只影响打包，不影响 pnpm 安装）。
+    workspace: client
+      ? ['vendor/*', 'packages/*/*', 'apps/cli']
+      : {
+          include: ['vendor/*', 'packages/*/*', 'apps/cli'],
+          exclude: ['packages/business/library-render'],
+        },
     entry: client ? '' : ['lib/types/{index,invariant,startup}.js'],
     outDir: 'lib',
     format: ['esm'],

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { applyPackagingPlan, createFixturePlan, parseSubtitles, validatePackagingPlan } from '../src/client/skeleton/video-packaging/packaging-plan.js'
+import type { LibraryRef } from '../src/client/skeleton/video-packaging/packaging-plan.js'
 
 describe('Video Packaging reviewed plans', () => {
   const transcript = {
@@ -37,14 +38,15 @@ describe('Video Packaging library allowlist', () => {
     sourceKind: 'imported-srt',
     segments: parseSubtitles('srt', '1\n00:00:01,000 --> 00:00:04,000\n不要急着改指令。\n', 8),
   }
-  const validRefFor = (lib: string) => {
-    if (lib === 'aikou') return { lib, componentId: 'tag', params: { label: '测试', en: 'TEST', icon: 'warn', x: 40, y: 300 } }
-    if (lib === 'talkcraft') return { lib, componentId: 'split-text-stagger', params: { text: '测试文字' } }
-    return { lib, componentId: 'typography/outline-word-fill', params: { word: '测试' } }
+  const validRefFor = (lib: string): LibraryRef => {
+    if (lib === 'aikou') return { lib: 'aikou', componentId: 'tag', params: { label: '测试', en: 'TEST', icon: 'warn', x: 40, y: 300 } }
+    if (lib === 'talkcraft') return { lib: 'talkcraft', componentId: 'split-text-stagger', params: { text: '测试文字' } }
+    if (lib === 'shotcraft') return { lib: 'shotcraft', componentId: 'typography/outline-word-fill', params: { word: '测试' } }
+    return { lib: lib as LibraryRef['lib'], componentId: 'typography/outline-word-fill', params: { word: '测试' } }
   }
   const withLib = (lib: string) => {
     const p = structuredClone(createFixturePlan({ duration: 8, width: 1280, height: 720, transcript }))
-    p.proposals[0]!.libraryRef = validRefFor(lib)
+    p.proposals[0] = { ...p.proposals[0]!, libraryRef: validRefFor(lib) }
     return p
   }
 
@@ -57,7 +59,10 @@ describe('Video Packaging library allowlist', () => {
   it('rejects refs with illegal componentIds (component-level gate)', () => {
     for (const lib of ['aikou', 'talkcraft', 'shotcraft']) {
       const p = structuredClone(createFixturePlan({ duration: 8, width: 1280, height: 720, transcript }))
-      p.proposals[0]!.libraryRef = { lib, componentId: 'not-a-component', params: {} }
+      p.proposals[0] = {
+        ...p.proposals[0]!,
+        libraryRef: { lib: lib as LibraryRef['lib'], componentId: 'not-a-component', params: {} },
+      }
       expect(() => validatePackagingPlan(p)).toThrow('白名单')
     }
   })

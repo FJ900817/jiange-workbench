@@ -20,8 +20,20 @@ export interface LibraryRef {
   readonly state?: string
 }
 
-export interface PackagingProposal {
-  readonly proposalId: string
+/**
+ * 组件库 lint 消费的最小方案形态（运行时只读 proposals；生产侧 packaging-plan.js
+ * 传的就是过滤后的 { proposals } 子集，所以 .d.ts 按实际消费声明，不按 PackagingPlan）。
+ * proposals 缺失时运行时抛中文错，类型上同样允许缺省。
+ */
+export interface LibraryLintInputPlan {
+  readonly proposals?: readonly {
+    readonly proposalId?: unknown
+    readonly libraryRef?: unknown
+    readonly animation?: unknown
+  }[]
+}
+
+export interface PackagingProposal {  readonly proposalId: string
   readonly componentType: 'title' | 'highlight' | 'info'
   readonly segmentId: string
   readonly evidenceText: string

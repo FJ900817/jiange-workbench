@@ -6,10 +6,11 @@ import {
   resolveTalkcraftRenderTarget,
 } from '../src/client/skeleton/video-packaging/talkcraft-dispatch.js'
 import { TALKCRAFT_COMPONENTS } from '../src/client/skeleton/video-packaging/talkcraft-components.js'
+import type { LibraryRef } from '../src/client/skeleton/video-packaging/packaging-plan.js'
 
 const THEMED_SAMPLE = 'chip-grid-single-select'
 const PLAIN_SAMPLE = 'crash-zoom-punch'
-const refOf = (componentId: string, params: Record<string, unknown> = {}) => ({
+const refOf = (componentId: string, params: Record<string, unknown> = {}): LibraryRef => ({
   lib: 'talkcraft',
   componentId,
   params,
@@ -19,7 +20,7 @@ describe('talkcraft 渲染分发', () => {
   it('默认叠加模式用 alphaFile 透明版', () => {
     const target = resolveTalkcraftRenderTarget(refOf(THEMED_SAMPLE))
     expect(target.mode).toBe('overlay')
-    expect(target.file).toBe(TALKCRAFT_COMPONENTS[THEMED_SAMPLE].alphaFile)
+    expect(target.file).toBe(TALKCRAFT_COMPONENTS[THEMED_SAMPLE]!.alphaFile)
     expect(target.file).toBe('talkcraft-cards/chip-grid-single-select.tsx')
   })
 

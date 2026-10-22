@@ -131,7 +131,7 @@ describe('talkcraft libraryRef lint (fixture only, no model calls)', () => {
 
   it('registry covers every whitelisted card with schema + meta + semantics', () => {
     for (const slug of TALKCRAFT_COMPONENT_IDS) {
-      const spec = TALKCRAFT_COMPONENTS[slug]
+      const spec = TALKCRAFT_COMPONENTS[slug]!
       expect(spec, slug).toBeDefined()
       expect(spec.propsSchema.length, `${slug} propsSchema`).toBeGreaterThan(0)
       expect(spec.meta.width, `${slug} meta.width`).toBe(960)

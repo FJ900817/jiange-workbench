@@ -27,25 +27,34 @@ describe('video packaging library wiring (fixture only, no model calls)', () => 
   it('aikou 非法 componentId 被生产校验链路拒绝（中文错）', () => {
     const plan = makePlan()
     expect(plan.proposals.length).toBeGreaterThan(0)
-    plan.proposals[0]!.libraryRef = { lib: 'aikou', componentId: 'not-a-component', params: { label: 'x' } }
+    plan.proposals[0] = {
+      ...plan.proposals[0]!,
+      libraryRef: { lib: 'aikou', componentId: 'not-a-component', params: { label: 'x' } },
+    }
     expect(() => validatePackagingPlan(plan)).toThrow('不在 8 个白名单')
   })
 
   it('talkcraft 非法 componentId 被生产校验链路拒绝（中文错）', () => {
     const plan = makePlan()
-    plan.proposals[0]!.libraryRef = { lib: 'talkcraft', componentId: 'not-a-card', params: {} }
+    plan.proposals[0] = {
+      ...plan.proposals[0]!,
+      libraryRef: { lib: 'talkcraft', componentId: 'not-a-card', params: {} },
+    }
     expect(() => validatePackagingPlan(plan)).toThrow('不在 29 张真 props 卡白名单')
   })
 
   it('shotcraft 非法 componentId 被生产校验链路拒绝（中文错）', () => {
     const plan = makePlan()
-    plan.proposals[0]!.libraryRef = { lib: 'shotcraft', componentId: 'not-a-shot', params: {} }
+    plan.proposals[0] = {
+      ...plan.proposals[0]!,
+      libraryRef: { lib: 'shotcraft', componentId: 'not-a-shot', params: {} },
+    }
     expect(() => validatePackagingPlan(plan)).toThrow('不在 31 个白名单')
   })
 
   it('无 libraryRef 的提案跳过组件级校验', () => {
     const plan = makePlan()
-    for (const proposal of plan.proposals) delete (proposal as Record<string, unknown>).libraryRef
+    for (const proposal of plan.proposals) delete (proposal as unknown as Record<string, unknown>).libraryRef
     expect(() => validatePackagingPlan(plan)).not.toThrow()
   })
 

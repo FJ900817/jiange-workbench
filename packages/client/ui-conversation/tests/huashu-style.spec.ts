@@ -70,22 +70,22 @@ describe('huashu-motion style guide (fixture only, no model calls)', () => {
       }
     }
     // kinetic 标题字号必须形成 scale contrast（一屏一个主张）
-    expect(HUASHU_STYLE_PRESETS['huashu-kinetic']!.title.fontSize).toBeGreaterThan(
-      HUASHU_STYLE_PRESETS['huashu-talking-head']!.title.fontSize,
+    expect(HUASHU_STYLE_PRESETS['huashu-kinetic']!.title!.fontSize).toBeGreaterThan(
+      HUASHU_STYLE_PRESETS['huashu-talking-head']!.title!.fontSize,
     )
   })
 
   it('非法 animation 被生产校验链路拒绝（中文错）', () => {
     const plan = makePlan()
     expect(plan.proposals.length).toBeGreaterThan(0)
-    plan.proposals[0]!.animation = 'zoomSpin' as never
+    plan.proposals[0] = { ...plan.proposals[0]!, animation: 'zoomSpin' as never }
     expect(() => validatePackagingPlan(plan)).toThrow('动画')
   })
 
   it('新动画值 slam / countUp 可通过生产校验', () => {
     const plan = makePlan()
-    plan.proposals[0]!.animation = 'slam'
-    if (plan.proposals[1]) plan.proposals[1]!.animation = 'countUp'
+    plan.proposals[0] = { ...plan.proposals[0]!, animation: 'slam' }
+    if (plan.proposals[1]) plan.proposals[1] = { ...plan.proposals[1]!, animation: 'countUp' }
     expect(() => validatePackagingPlan(plan)).not.toThrow()
   })
 
@@ -95,8 +95,9 @@ describe('huashu-motion style guide (fixture only, no model calls)', () => {
     for (const presetId of HUASHU_STYLE_PRESET_IDS) {
       const plan = makePlan(presetId)
       const preset = HUASHU_STYLE_PRESETS[presetId]!
-      for (const proposal of plan.proposals) {
-        proposal.style = { ...preset[proposal.componentType]! }
+      for (let i = 0; i < plan.proposals.length; i++) {
+        const proposal = plan.proposals[i]!
+        plan.proposals[i] = { ...proposal, style: { ...preset[proposal.componentType]! } }
       }
       expect(() => validatePackagingPlan(plan)).not.toThrow()
     }
