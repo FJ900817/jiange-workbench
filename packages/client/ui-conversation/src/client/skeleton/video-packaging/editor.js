@@ -60,6 +60,8 @@ function defaultProject(metadata) {
     video: { asset: 'source.mp4', width: metadata.width, height: metadata.height, duration: metadata.duration, fps: metadata.fps ?? 30, codec: metadata.videoCodec ?? null, hasAudio: metadata.hasAudio, audio: metadata.audio ?? null, importedAt: new Date().toISOString() },
     components: [],
     mediaAssets: [],
+    // 面板「深色视频场景」开关（默认浅色）：talkcraft 深色字卡自动用浅色版。
+    darkScene: false,
     updatedAt: new Date().toISOString(),
   }
 }
@@ -89,6 +91,8 @@ async function syncAikouOverlayAsset(item) {
 
 async function syncTextOverlayAssets() {
   for (const item of project.components.filter(component => component.type !== 'asset')) {
+    // talkcraft 卡片由 Host 隔离渲染器渲染（经 talkcraft-dispatch 选透明版），编辑器不上传 PNG。
+    if (item.libraryRef && item.libraryRef.lib === 'talkcraft') continue
     if (item.libraryRef && item.libraryRef.lib === 'aikou') { await syncAikouOverlayAsset(item); continue }
     const signature = JSON.stringify([item.type, item.text, item.title, item.body, item.x, item.y, item.width, item.height, item.fontSize, item.color, item.accent, item.background, item.visualStyle, item.emphasisText])
     if (item.overlayAssetId && item.overlaySignature === signature && project.mediaAssets.some(asset => asset.id === item.overlayAssetId)) continue
@@ -187,6 +191,7 @@ async function loadProject() {
   if (payload.project) {
     project = payload.project
     project.mediaAssets ??= []
+    $('#dark-scene-toggle').checked = project.darkScene === true
     for (const reference of project.mediaAssets) {
       const libraryAsset = libraryAssets.find(asset => asset.id === reference.id)
       if (libraryAsset) Object.assign(libraryAsset, Object.fromEntries(['category', 'purposeTags', 'styleTags', 'recommendedScenes', 'defaultDisplay'].filter(key => reference[key] !== undefined).map(key => [key, reference[key]])))
@@ -1032,6 +1037,11 @@ $('#ai-packaging-toggle').addEventListener('click', event => {
 $('#retrieve-assets').addEventListener('click', () => { try { retrieveAssetRecommendations() } catch (error) { notify(error.message) } })
 document.querySelectorAll('[data-add]').forEach(button => button.addEventListener('click', () => addComponent(button.dataset.add)))
 $('#save-button').addEventListener('click', () => saveProject())
+$('#dark-scene-toggle').addEventListener('change', event => {
+  if (!project) return
+  project.darkScene = event.currentTarget.checked === true
+  setDirty()
+})
 $('#render-button').addEventListener('click', () => renderVideo().catch(error => { $('#render-button').disabled = false; notify(error.message) }))
 $('#delete-component').addEventListener('click', () => {
   if (!selectedId) return

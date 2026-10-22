@@ -12,6 +12,11 @@ import type { JsonValue } from '@deepseek-ai/dsh-session/types'
 import { BusinessWorkbenchError } from './errors.ts'
 import { buildP5RenderArgs } from './video-packaging-render.ts'
 import type { PackagingRenderProject } from './video-packaging-render.ts'
+import {
+  createTalkcraftRenderJob,
+  isTalkcraftComponent,
+  renderTalkcraftStillPng,
+} from './video-packaging-talkcraft.ts'
 import type { VideoPackagingAsset, VideoPackagingProject, VideoPackagingRenderTask } from './types.ts'
 
 const UUID = z.string().uuid()
@@ -41,7 +46,8 @@ const assetComponent = componentBase.extend({
 const textComponent = componentBase.extend({
   type: z.enum(['title', 'highlight', 'info']),
   hidden: z.boolean().optional(),
-  overlayAssetId: UUID,
+  // talkcraft 组件由 Host 隔离渲染器渲染，编辑器不上传 PNG，因此可选。
+  overlayAssetId: UUID.optional(),
 }).passthrough()
 const p5AssetReference = z.object({
   id: UUID,
@@ -76,6 +82,8 @@ const p5DocumentSchema = z.object({
   }).passthrough(),
   components: z.array(z.union([assetComponent, textComponent])).max(100),
   mediaAssets: z.array(p5AssetReference).max(100),
+  // 面板「深色视频场景」开关（默认浅色）：talkcraft 深色字卡自动用浅色版。
+  darkScene: z.boolean().optional(),
 }).passthrough().superRefine((project, context) => {
   if (project.width !== project.video.width || project.height !== project.video.height) {
     context.addIssue({ code: 'custom', path: ['video'], message: 'P5 canvas and source dimensions must match for S2 rendering' })
@@ -94,8 +102,12 @@ const p5DocumentSchema = z.object({
     if (component.type === 'asset' && !assetIds.has(component.assetId)) {
       context.addIssue({ code: 'custom', path: ['components'], message: 'asset component does not name a project asset' })
     }
-    if (component.type !== 'asset' && !assetIds.has(component.overlayAssetId)) {
-      context.addIssue({ code: 'custom', path: ['components'], message: 'text component overlay does not name a project PNG asset' })
+    if (component.type !== 'asset' && !isTalkcraftComponent(component)) {
+      // talkcraft 组件由 Host 隔离渲染器渲染，不要求预上传 PNG。
+      const overlayAssetId = component.overlayAssetId
+      if (overlayAssetId === undefined || !assetIds.has(overlayAssetId)) {
+        context.addIssue({ code: 'custom', path: ['components'], message: 'text component overlay does not name a project PNG asset' })
+      }
     }
   }
   const ids = new Set<string>()
@@ -489,17 +501,38 @@ export class VideoPackagingStore {
     let record: VideoPackagingRenderTask = Object.freeze({ ...task, status: 'running', updatedAt: now })
     await this.renders.put(record.renderTaskId, record)
     const temporary = join(this.renderRoot, `render-${record.renderTaskId}.partial.mp4`)
+    // talkcraft 卡片由 Host 隔离渲染器渲染成透明 PNG（编辑器不上传）：先逐张渲染，
+    // 再交给 FFmpeg 叠加链路。darkScene 来自面板「深色视频场景」开关（默认浅色）。
+    const talkcraftOverlays = new Map<string, string>()
+    const darkScene = project.document.darkScene === true
     try {
       const source = this.assetPath(this.requireAsset(project.sourceVideoAssetId))
+      for (const component of project.document.components) {
+        if (component.type === 'asset' || !isTalkcraftComponent(component)) continue
+        const stillSec = Math.min(Math.max(1, component.duration * 0.5), Math.max(0.6, component.duration - 0.35))
+        const libraryRef = (component as { readonly libraryRef?: unknown }).libraryRef as {
+          readonly lib: 'talkcraft'
+          readonly componentId?: string
+          readonly params?: Record<string, unknown>
+        }
+        const job = createTalkcraftRenderJob(libraryRef, { mode: 'overlay', darkScene, stillSec })
+        const pngPath = join(this.renderRoot, `talkcraft-${component.id}.png`)
+        await renderTalkcraftStillPng(job, pngPath, { timeoutMs: this.config.renderTimeoutMs })
+        talkcraftOverlays.set(component.id, pngPath)
+      }
       const args = buildP5RenderArgs(
         project.document as unknown as PackagingRenderProject,
         source,
         temporary,
         assetId => this.assetPath(this.requireAsset(assetId)),
         (componentId) => {
+          const preRendered = talkcraftOverlays.get(componentId)
+          if (preRendered !== undefined) return preRendered
           const component = project.document.components.find(item => item.id === componentId)
           if (component === undefined || component.type === 'asset') throw invalid('P5 text overlay reference is invalid')
-          return this.assetPath(this.requireAsset(component.overlayAssetId))
+          const overlayAssetId = component.overlayAssetId
+          if (overlayAssetId === undefined) throw invalid('P5 text overlay reference is invalid')
+          return this.assetPath(this.requireAsset(overlayAssetId))
         },
         this.config.maxOutputBytes,
       )
@@ -544,6 +577,9 @@ export class VideoPackagingStore {
         logTail: error instanceof Error ? error.message.slice(-16_000) : 'render failed',
         updatedAt: Date.now(),
       })
+    }
+    for (const pngPath of talkcraftOverlays.values()) {
+      await rm(pngPath, { force: true })
     }
     await this.renders.put(record.renderTaskId, record)
   }

@@ -152,3 +152,32 @@
 - Agent Note: .agents/notes/implemented/architecture/2026-10-22-talkcraft-alpha-pilot.md
   （extends notes/2026-10-22-p1-talkcraft.md §1 缺口①）
 - 红线：零付费模型调用；未碰 127.0.0.1:3080 与 ~/.dsh；未做 Desktop 部署
+
+## 2026-10-22 talkcraft 透明分发接线（分支 p2-more-components）
+
+- 目标：把 talkcraft-dispatch（死代码）真正接到渲染服务——Host 渲染 talkcraft
+  组件时经分发选透明版，驱动隔离渲染器出 PNG 进 FFmpeg 叠加链路
+- Host 新增 `src/video-packaging-talkcraft.ts`：`isTalkcraftComponent` /
+  `createTalkcraftRenderJob`（调分发：叠加→alphaFile 绝对路径，整屏→原库路径；
+  静帧按 stillSec 折算钳制）/ `renderTalkcraftStillPng`（spawn 渲染器 CLI，
+  失败/超时中文错）
+- Host `src/video-packaging.ts`：`runRender` 预渲染 talkcraft 叠加 PNG
+  （render-scoped 临时文件，任务结束删除）；overlay 解析器分支；
+  `overlayAssetId` 改可选 + superRefine 豁免 talkcraft；工程文档新增
+  `darkScene?: boolean`；FFmpeg 参数构造未动
+- 隔离渲染器 `packages/business/talkcraft-render/`（新建 private 包，已交付）：
+  `render-card.mjs` CLI（--card/--props/--width/--height/--fps/--frame/--out），
+  `@remotion/*@4.0.519` + `renderStill` 出 RGBA PNG；冒烟：
+  title-demote-to-label 第 45 帧 98.4% 透明、chip-grid-single-select
+  theme=dark 第 120 帧 98.1% 透明，四角 alpha 全 0；Chromium 自动下载复用
+- 面板：视频主轨区「深色视频场景」开关（默认浅色）→ `project.darkScene`；
+  编辑器跳过 talkcraft PNG 上传（Host 渲染）；`embedded-editor.ts` 已同步
+  再生（`gen-embedded-editor.mjs`，转义与原 bundle 字节级对齐）
+- 测试：`video-packaging-talkcraft.spec.ts` 8/8；`video-packaging.spec.ts`
+  2/2 回归；tsc 干净；oxlint 新增文件 0 错误
+  （`video-packaging.ts` 40 个为改动前已存在）
+- 红线：零付费模型调用；未碰 127.0.0.1:3080 与 ~/.dsh；未做 Desktop 部署；
+  talkcraft 原库与改编卡只读未改动
+- Agent Note: .agents/notes/implemented/architecture/2026-10-22-talkcraft-render-wiring.md
+- 缺口：卡片按原生 960×540 叠加于组件 x/y（AI 给的 w/h 未缩放）；整屏渲染
+  管线未建；预览层无卡片真实预览；渲染器包需 pnpm install
