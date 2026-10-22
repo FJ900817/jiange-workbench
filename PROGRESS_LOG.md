@@ -2,6 +2,28 @@
 
 > 人话版给简哥，技术细节沉这里。验收门禁按 V3.0 十一级如实标注。
 
+## 2026-10-22 还 lint 旧债 + 内联新鲜度测试（分支 p2-more-components）
+
+- 背景：talkcraft 接线时 pre-commit 钩子被 `video-packaging.ts` 的 15 个旧
+  lint 错误拦截，用 `--no-verify` 绕行；`embedded-editor.ts` 内联之前两次
+  悄悄过期
+- 任务一（15/15 全修，0 跳过）：4×`no-non-null-assertion`——2 处 duration
+  加显式 null 守卫（source-video 的 duration 被 inspectMp4 的 throw 保证非空，
+  守卫永不触发）+ `bytes[25]!`→`readUInt8(25)` + 解构默认值；10×`max-len`
+  纯换行；1×`no-identical-functions` 抽出 `createErrorFinisher` 工厂（两处
+  finish 逻辑逐字保留）。运行时行为零变化
+- 任务二：新增 `packages/client/ui-conversation/tests/embedded-editor-inline.spec.ts`——
+  11 份内联逐字节校验 + 导出集合校验；过期时中文点名（如
+  `huashuStyleJs（源文件 huashu-style.js）`）并提示跑
+  `node gen-embedded-editor.mjs`；反向验证过（改源文件/加导出都会按预期失败）
+- 测试：钩子 lint 15→0 错误；`video-packaging` 相关 21/21；新测试 2/2；
+  `tsc --noEmit`（business-workbench）干净
+- 遗留（范围外）：全量 type-aware 下 25 个旧错（zod deprecated 等，钩子不查）；
+  `tsc -b tsconfig.client.json` 44 个旧错全在别的测试文件
+- Agent Note: .agents/notes/implemented/architecture/2026-10-22-lint-debt-and-inline-freshness.md
+- 红线：零付费模型调用；未碰 127.0.0.1:3080 与 ~/.dsh；未做 Desktop 部署；
+  原库零修改
+
 ## 阶段 0：基线确认（2026-10-21）
 
 - **目标**：确认云端基线内容，定位 V3-03。

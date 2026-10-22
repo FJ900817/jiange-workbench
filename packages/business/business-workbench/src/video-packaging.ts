@@ -77,7 +77,14 @@ const p5DocumentSchema = z.object({
     fps: z.number().finite().min(1).max(60),
     codec: z.string().min(1).max(80),
     hasAudio: z.boolean(),
-    audio: z.object({ codec: z.string().min(1).max(80), sampleRate: z.number().int().positive(), channels: z.number().int().positive() }).passthrough().optional(),
+    audio: z
+      .object({
+        codec: z.string().min(1).max(80),
+        sampleRate: z.number().int().positive(),
+        channels: z.number().int().positive(),
+      })
+      .passthrough()
+      .optional(),
     importedAt: z.string().max(80).optional(),
   }).passthrough(),
   components: z.array(z.union([assetComponent, textComponent])).max(100),
@@ -228,13 +235,26 @@ export class VideoPackagingStore {
       }
     }
     const stagingFiles = await readdir(this.stagingRoot)
-    await Promise.all(stagingFiles.filter(name => /^upload-[a-f0-9-]{36}\.part$/.test(name)).map(name => rm(join(this.stagingRoot, name), { force: true })))
+    await Promise.all(
+      stagingFiles
+        .filter(name => /^upload-[a-f0-9-]{36}\.part$/.test(name))
+        .map(name => rm(join(this.stagingRoot, name), { force: true })),
+    )
     const renderFiles = await readdir(this.renderRoot)
-    await Promise.all(renderFiles.filter(name => /^render-[a-f0-9-]{36}\.partial\.mp4$/.test(name)).map(name => rm(join(this.renderRoot, name), { force: true })))
+    await Promise.all(
+      renderFiles
+        .filter(name => /^render-[a-f0-9-]{36}\.partial\.mp4$/.test(name))
+        .map(name => rm(join(this.renderRoot, name), { force: true })),
+    )
   }
 
   /** Start one strictly bounded binary import through authenticated Host Remotes. */
-  async beginUpload(request: { readonly name: string; readonly mediaType: string; readonly bytes: number; readonly sha256: string }): Promise<{ readonly uploadId: string; readonly chunkBytes: number }> {
+  async beginUpload(request: {
+    readonly name: string
+    readonly mediaType: string
+    readonly bytes: number
+    readonly sha256: string
+  }): Promise<{ readonly uploadId: string; readonly chunkBytes: number }> {
     this.assertEnabled()
     const parsedType = mediaType.parse(request.mediaType)
     const bytes = z.number().int().positive().max(Number.MAX_SAFE_INTEGER).parse(request.bytes)
@@ -254,7 +274,11 @@ export class VideoPackagingStore {
   }
 
   /** Append one canonical, ordered, bounded base64 chunk. */
-  async appendUploadChunk(request: { readonly uploadId: string; readonly offset: number; readonly data: string }): Promise<{ readonly receivedBytes: number; readonly nextOffset: number }> {
+  async appendUploadChunk(request: {
+    readonly uploadId: string
+    readonly offset: number
+    readonly data: string
+  }): Promise<{ readonly receivedBytes: number; readonly nextOffset: number }> {
     const upload = this.requireUpload(request.uploadId)
     if (Date.now() - upload.startedAt > 15 * 60_000) {
       await this.abortUpload(upload.uploadId)
@@ -341,7 +365,16 @@ export class VideoPackagingStore {
   }
 
   /** Read one bounded media range for authenticated download and playback. */
-  async readAssetChunk(request: { readonly assetId: string; readonly offset: number; readonly maxBytes: number }): Promise<{ readonly asset: VideoPackagingAsset; readonly offset: number; readonly data: string; readonly eof: boolean }> {
+  async readAssetChunk(request: {
+    readonly assetId: string
+    readonly offset: number
+    readonly maxBytes: number
+  }): Promise<{
+    readonly asset: VideoPackagingAsset
+    readonly offset: number
+    readonly data: string
+    readonly eof: boolean
+  }> {
     const asset = this.requireAsset(request.assetId)
     if (!Number.isSafeInteger(request.offset) || request.offset < 0 || request.offset >= asset.bytes) throw invalid('asset read offset is outside the file')
     const count = z.number().int().min(1).max(VideoPackagingStore.CHUNK_BYTES).parse(request.maxBytes)
@@ -364,6 +397,7 @@ export class VideoPackagingStore {
     if ([...this.projects.entries()].length >= this.config.maxProjects) throw invalid('Video Packaging project limit reached')
     const source = this.requireAsset(request.sourceVideoAssetId)
     if (source.mediaType !== 'video/mp4' || source.kind !== 'source-video') throw invalid('project source must be an imported MP4 asset')
+    if (source.duration === null) throw invalid('project source is missing its duration')
     this.assertAssetUsable(source)
     const name = request.name.trim()
     if (!name || name.length > 120) throw invalid('project name is invalid')
@@ -378,7 +412,7 @@ export class VideoPackagingStore {
       height: source.height,
       video: {
         asset: 'source.mp4', width: source.width, height: source.height,
-        duration: source.duration!, fps: source.fps ?? 30, codec: source.videoCodec ?? 'unknown', hasAudio: source.hasAudio,
+        duration: source.duration, fps: source.fps ?? 30, codec: source.videoCodec ?? 'unknown', hasAudio: source.hasAudio,
         ...(source.hasAudio && source.audioCodec !== null && source.audioSampleRate !== null && source.audioChannels !== null
           ? { audio: { codec: source.audioCodec, sampleRate: source.audioSampleRate, channels: source.audioChannels } }
           : {}),
@@ -410,7 +444,11 @@ export class VideoPackagingStore {
   }
 
   /** Save a validated P5-07 document with compare-and-swap revision protection. */
-  async saveProject(request: { readonly projectId: string; readonly expectedRevision: number; readonly document: JsonValue }): Promise<VideoPackagingProject> {
+  async saveProject(request: {
+    readonly projectId: string
+    readonly expectedRevision: number
+    readonly document: JsonValue
+  }): Promise<VideoPackagingProject> {
     const current = this.requireProject(request.projectId)
     if (!Number.isSafeInteger(request.expectedRevision) || request.expectedRevision !== current.revision) {
       throw new BusinessWorkbenchError('REVISION_CONFLICT', 'business-workbench: Video Packaging project revision changed', {
@@ -423,7 +461,12 @@ export class VideoPackagingStore {
     const document = parseProject(request.document)
     if (document.projectId !== current.projectId || document.name !== current.name) throw invalid('P5-07 identity does not match its Host project record')
     const source = this.requireAsset(current.sourceVideoAssetId)
-    if (document.video.width !== source.width || document.video.height !== source.height || Math.abs(document.video.duration - source.duration!) > 0.02) {
+    if (source.duration === null) throw invalid('project source is missing its duration')
+    if (
+      document.video.width !== source.width
+      || document.video.height !== source.height
+      || Math.abs(document.video.duration - source.duration) > 0.02
+    ) {
       throw invalid('P5-07 source facts do not match the Host source Asset')
     }
     for (const ref of document.mediaAssets) {
@@ -659,8 +702,19 @@ interface MediaFacts {
   readonly hasAlpha: boolean
 }
 
+interface ProbeStream {
+  readonly codec_type?: string
+  readonly codec_name?: string
+  readonly width?: number
+  readonly height?: number
+  readonly pix_fmt?: string
+  readonly avg_frame_rate?: string
+  readonly sample_rate?: string
+  readonly channels?: number
+}
+
 interface ProbeResult {
-  readonly streams?: readonly { readonly codec_type?: string; readonly codec_name?: string; readonly width?: number; readonly height?: number; readonly pix_fmt?: string; readonly avg_frame_rate?: string; readonly sample_rate?: string; readonly channels?: number }[]
+  readonly streams?: readonly ProbeStream[]
   readonly format?: { readonly duration?: string }
 }
 
@@ -713,7 +767,7 @@ function decodePngHeader(bytes: Buffer): { readonly width: number; readonly heig
   if (bytes.readUInt32BE(8) !== 13 || bytes.subarray(12, 16).toString('ascii') !== 'IHDR') throw invalid('PNG IHDR is invalid')
   const width = bytes.readUInt32BE(16)
   const height = bytes.readUInt32BE(20)
-  const colorType = bytes[25]!
+  const colorType = bytes.readUInt8(25)
   if (!width || !height || width > 8192 || height > 8192 || width * height > 33_554_432) throw invalid('PNG dimensions exceed the supported limit')
   const hasTransparencyChunk = bytes.includes(Buffer.from('tRNS'))
   if (![4, 6].includes(colorType) && !hasTransparencyChunk) throw invalid('PNG has no alpha channel or transparency chunk')
@@ -774,8 +828,8 @@ async function inspectMp4(path: string, ffprobePath: string): Promise<MediaFacts
 
 function parseRatio(value: string | undefined): number | null {
   if (value === undefined) return null
-  const [numerator, denominator] = value.split('/').map(Number)
-  const ratio = denominator === undefined ? Number(value) : numerator! / denominator
+  const [numerator = 0, denominator] = value.split('/').map(Number)
+  const ratio = denominator === undefined ? Number(value) : numerator / denominator
   return Number.isFinite(ratio) && ratio > 0 ? ratio : null
 }
 
@@ -785,7 +839,27 @@ async function hashFile(path: string): Promise<string> {
   return hash.digest('hex')
 }
 
-async function runBounded(command: string, args: readonly string[], timeoutMs: number, maxOutputBytes: number): Promise<{ readonly stdout: string; readonly stderr: string }> {
+/** Settle-once error finisher shared by the bounded child-process runners below. */
+function createErrorFinisher(
+  isSettled: () => boolean,
+  markSettled: () => void,
+  timeout: ReturnType<typeof setTimeout>,
+  rejectPromise: (reason: Error) => void,
+): (error?: Error) => void {
+  return (error?: Error): void => {
+    if (isSettled()) return
+    markSettled()
+    clearTimeout(timeout)
+    if (error !== undefined) rejectPromise(error)
+  }
+}
+
+async function runBounded(
+  command: string,
+  args: readonly string[],
+  timeoutMs: number,
+  maxOutputBytes: number,
+): Promise<{ readonly stdout: string; readonly stderr: string }> {
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(command, [...args], { shell: false, stdio: ['ignore', 'pipe', 'pipe'] })
     const stdout: Buffer[] = []
@@ -796,12 +870,12 @@ async function runBounded(command: string, args: readonly string[], timeoutMs: n
       child.kill('SIGTERM')
       finish(new RenderTimeoutError())
     }, timeoutMs)
-    const finish = (error?: Error): void => {
-      if (settled) return
-      settled = true
-      clearTimeout(timeout)
-      if (error !== undefined) rejectPromise(error)
-    }
+    const finish = createErrorFinisher(
+      () => settled,
+      () => { settled = true },
+      timeout,
+      rejectPromise,
+    )
     child.stdout.on('data', (chunk: Buffer) => {
       outputBytes += chunk.byteLength
       if (outputBytes > maxOutputBytes) {
@@ -846,12 +920,12 @@ async function runFfmpeg(
       timeoutError = new RenderTimeoutError()
       child.once('close', () => clearTimeout(killTimer))
     }, timeoutMs)
-    const finish = (error?: Error): void => {
-      if (settled) return
-      settled = true
-      clearTimeout(timeout)
-      if (error !== undefined) rejectPromise(error)
-    }
+    const finish = createErrorFinisher(
+      () => settled,
+      () => { settled = true },
+      timeout,
+      rejectPromise,
+    )
     child.stderr.on('data', (chunk: Buffer) => {
       logTail = `${logTail}${chunk.toString('utf8')}`.slice(-16_000)
     })
