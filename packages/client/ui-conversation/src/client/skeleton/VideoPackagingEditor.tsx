@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ConversationInjected } from '../contract/slots.ts'
-import { editorHtml, editorCss, editorJs, packagingPlanJs, assetRetrievalJs, aikouComponentsJs, aikouLintJs, talkcraftLintJs, shotcraftLintJs } from './video-packaging/embedded-editor.ts'
+import { editorHtml, editorCss, editorJs, packagingPlanJs, assetRetrievalJs, aikouComponentsJs, aikouLintJs, talkcraftLintJs, shotcraftLintJs, huashuStyleJs, huashuStyleLintJs } from './video-packaging/embedded-editor.ts'
 import { videoPackagingTheme } from './video-packaging/video-packaging-theme.ts'
 import css from './MediaCreationStudio.module.css'
 
@@ -107,7 +107,10 @@ function buildDocument(): string {
   // validator names against these outer consts.
   const bundleLint = (src: string, exportName: string) =>
     `const ${exportName} = (() => {\n${stripModule(src)}\nreturn ${exportName};\n})();`
-  const helpers = `${bundleLint(aikouLintJs, 'validateAikouLibraryRefs')}\n${bundleLint(talkcraftLintJs, 'validateTalkcraftLibraryRefs')}\n${bundleLint(shotcraftLintJs, 'validateShotcraftLibraryRefs')}\n${stripModule(packagingPlanJs)}\n${stripModule(assetRetrievalJs)}\n${stripModule(aikouComponentsJs)}`
+  // packaging-plan.js imports HUASHU_ANIMATIONS / HUASHU_STYLE_PRESETS from
+  // huashu-style.js; the browser bundle strips imports, so inline the style
+  // module (stripped of export keywords) before packagingPlanJs.
+  const helpers = `${bundleLint(aikouLintJs, 'validateAikouLibraryRefs')}\n${bundleLint(talkcraftLintJs, 'validateTalkcraftLibraryRefs')}\n${bundleLint(shotcraftLintJs, 'validateShotcraftLibraryRefs')}\n${bundleLint(huashuStyleLintJs, 'validateHuashuStyle')}\n${stripModule(huashuStyleJs)}\n${stripModule(packagingPlanJs)}\n${stripModule(assetRetrievalJs)}\n${stripModule(aikouComponentsJs)}`
   const runtime = `<script>const __pending=new Map();let __seq=0;window.addEventListener('message',e=>{if(e.data?.kind==='dsh-video-packaging-response'){const p=__pending.get(e.data.id);if(p){__pending.delete(e.data.id);const body=e.data.body instanceof Blob?e.data.body:typeof e.data.body==='string'?e.data.body:JSON.stringify(e.data.body);p(new Response(body,{status:e.data.status,headers:{'content-type':e.data.contentType||(e.data.body instanceof Blob?'application/octet-stream':'application/json')}}))}}else if(e.data?.kind==='dsh-video-packaging-open'){window.__DSH_PROJECT_ID__=e.data.projectId;location.reload()}else if(e.data?.kind==='dsh-video-packaging-panels'){document.body.classList.toggle('dsh-hide-library',Boolean(e.data.library));document.body.classList.toggle('dsh-hide-inspector',Boolean(e.data.inspector))}});window.fetch=(url,init={})=>new Promise(resolve=>{const id=String(++__seq);__pending.set(id,resolve);parent.postMessage({kind:'dsh-video-packaging-request',id,url:String(url),method:init.method||'GET',headers:Object.fromEntries(new Headers(init.headers||{}).entries()),body:init.body??null},'*')});window.__DSH_PROJECT_ID__=${JSON.stringify(new URLSearchParams(location.search).get('videoPackagingProject') ?? '')};</script><script>${safeScript(helpers)}\n${safeScript(app)}</script>`
   const responsive = `
     body{min-width:0!important}

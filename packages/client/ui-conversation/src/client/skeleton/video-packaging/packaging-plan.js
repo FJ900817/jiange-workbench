@@ -3,16 +3,19 @@
 import { validateAikouLibraryRefs } from './aikou-lint.js'
 import { validateTalkcraftLibraryRefs } from './talkcraft-lint.js'
 import { validateShotcraftLibraryRefs } from './shotcraft-cards/shotcraft-lint.js'
+import { validateHuashuStyle } from './huashu-style-lint.js'
+import { HUASHU_ANIMATIONS, HUASHU_STYLE_PRESETS } from './huashu-style.js'
 
 const COMPONENT_TYPES = new Set(['title', 'highlight', 'info'])
 const MAX_SEGMENTS = 500
 const MAX_PROPOSALS = 8
-/** Libraries a proposal may reference. P1/P2 open talkcraft + shotcraft; huashu stays design-asset. */
+/** Libraries a proposal may reference. P1/P2 open talkcraft + shotcraft; huashu stays design-asset (style guide only). */
 const LIBRARY_LIBS = new Set(['aikou', 'talkcraft', 'shotcraft', 'huashu'])
 const LIBRARY_ALLOWLIST = new Set(['aikou', 'talkcraft', 'shotcraft'])
 /**
  * Locked styles per preset and component bucket. The AI may only change
  * text/timing/position; any invented color or size is rejected ("换文字保样式").
+ * huashu presets (talking-head / kinetic) are merged in from the style guide.
  */
 const STYLE_PRESETS = {
   'neutral-editorial': {
@@ -20,6 +23,8 @@ const STYLE_PRESETS = {
     highlight: { fontSize: 36, color: '#ffffff', accent: '#e6b94e', background: '#1f2728' },
     info: { fontSize: 30, color: '#ffffff', accent: '#e6b94e', background: '#1f2728' },
   },
+  // huashu-motion style guide presets ("借设计不借引擎"): same color discipline.
+  ...HUASHU_STYLE_PRESETS,
 }
 
 function parseTimestamp(value) {
@@ -164,7 +169,7 @@ export function validatePackagingPlan(plan) {
     if (x < 0 || y < 0 || itemWidth <= 0 || itemHeight <= 0 || x + itemWidth > width || y + itemHeight > height) throw new Error(`组件 ${item.proposalId} 超出画布范围`)
     const text = item.componentType === 'info' ? item.content?.title + item.content?.body : item.content?.text
     if (typeof text !== 'string' || !text.trim() || text.length > 400) throw new Error(`组件 ${item.proposalId} 文案无效`)
-    if (!['fadeUp', 'none'].includes(item.animation)) throw new Error(`组件 ${item.proposalId} 动画无效`)
+    if (!HUASHU_ANIMATIONS.includes(item.animation)) throw new Error(`组件 ${item.proposalId} 动画无效：只能是 ${HUASHU_ANIMATIONS.join('、')}`)
     const locked = lockedStyles[item.componentType]
     const style = item.style ?? {}
     if (locked.fontSize !== style.fontSize || locked.color !== style.color || locked.accent !== style.accent || locked.background !== style.background) {
@@ -185,6 +190,8 @@ export function validatePackagingPlan(plan) {
   validateAikouLibraryRefs({ proposals: plan.proposals.filter(item => item.libraryRef?.lib === 'aikou') })
   validateTalkcraftLibraryRefs({ proposals: plan.proposals.filter(item => item.libraryRef?.lib === 'talkcraft') })
   validateShotcraftLibraryRefs({ proposals: plan.proposals.filter(item => item.libraryRef?.lib === 'shotcraft') })
+  // 风格铁律（huashu 设计语言）：animation 只能取指南里的 8 个值，不许 AI 自创。
+  validateHuashuStyle(plan)
   for (let time = 0; time < duration; time += 0.05) {
     const visible = plan.proposals.filter(item => time >= item.start && time < item.start + item.duration)
     if (visible.length > 2) throw new Error(`时间 ${time.toFixed(2)}s 同时出现的包装组件超过两类`)

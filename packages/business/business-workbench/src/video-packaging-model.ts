@@ -17,6 +17,7 @@ import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { AIKOU_SELECT_PROMPT } from '@deepseek-ai/dsh-client-ui-conversation/src/client/skeleton/video-packaging/aikou-select-prompt.js'
 import { TALKCRAFT_SELECT_PROMPT } from '@deepseek-ai/dsh-client-ui-conversation/src/client/skeleton/video-packaging/talkcraft-select-prompt.js'
 import { SHOTCRAFT_SELECT_PROMPT } from '@deepseek-ai/dsh-client-ui-conversation/src/client/skeleton/video-packaging/shotcraft-cards/shotcraft-select.js'
+import { HUASHU_STYLE_PROMPT } from '@deepseek-ai/dsh-client-ui-conversation/src/client/skeleton/video-packaging/huashu-style.js'
 import { BusinessWorkbenchError } from './errors.ts'
 import type {
   RunVideoPackagingPlanRequest,
@@ -250,7 +251,9 @@ export function freezeVideoPackagingAiPlanRequest(
  * triggers rendering, or approves materials. Pinned verbatim: the Host,
  * not the model, decides what enters the timeline.
  * Card-selection guides for the three open libraries (aikou / talkcraft /
- * shotcraft) are appended after the base instruction, one section each.
+ * shotcraft) are appended after the base instruction, one section each,
+ * followed by the huashu-motion style guide ("借设计不借引擎": style /
+ * animation vocabulary only, no engine).
  */
 export const VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT =
   '你是视频包装建议助手。你只输出包装方案建议（JSON），绝不直接修改工程、触发渲染或批准素材。' +
@@ -260,7 +263,9 @@ export const VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT =
   '\n\n' +
   TALKCRAFT_SELECT_PROMPT +
   '\n\n' +
-  SHOTCRAFT_SELECT_PROMPT
+  SHOTCRAFT_SELECT_PROMPT +
+  '\n\n' +
+  HUASHU_STYLE_PROMPT
 
 /**
  * Dedicated restricted invocation entry for Video Packaging AI suggestions.

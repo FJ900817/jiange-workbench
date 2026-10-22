@@ -31,7 +31,7 @@ export interface PackagingProposal {
   readonly position: { x: number; y: number; width: number; height: number }
   readonly content: { text?: string; title?: string; body?: string }
   readonly style: { fontSize: number; color: string; accent: string; background: string }
-  readonly animation: 'fadeUp' | 'none'
+  readonly animation: 'fadeUp' | 'fade' | 'none' | 'slam' | 'countUp' | 'wordSwap' | 'wipe' | 'spring'
   readonly libraryRef?: LibraryRef
   _selected?: boolean
 }

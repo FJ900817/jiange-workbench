@@ -135,10 +135,11 @@ describe('V3-03R restricted model entry', () => {
     expect(VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT).toContain('绝不直接修改工程')
   })
 
-  it('injects all three library card-selection guides', () => {
+  it('injects all three library card-selection guides + huashu style guide', () => {
     expect(VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT).toContain('【选组件指南 · AI口播包装库】')
     expect(VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT).toContain('【选卡指南 · video-talkcraft')
     expect(VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT).toContain('【选镜头卡指南 · shotcraft')
+    expect(VIDEO_PACKAGING_SUGGESTION_SYSTEM_PROMPT).toContain('【风格指南')
   })
 })
 
