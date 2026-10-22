@@ -50,6 +50,7 @@ export const TALKCRAFT_COMPONENT_IDS = Object.freeze([
 export const TALKCRAFT_COMPONENTS = {
   'bed-echo-blur': {
     slug: 'bed-echo-blur',
+    alphaFile: 'talkcraft-cards/bed-echo-blur.tsx', // 透明改编版（全量）：根整屏底已去掉，叠加渲染时用此文件
     name: "同源模糊底床",
     oneliner: "竖屏素材（9:16）装白边卡放右侧，同一条素材放大 1.25 + blur 26 + brightness .45 + saturate .8 铺满当底床且慢放 0.5×；左侧标题两行 + 来源两行逐行升入，前景卡落位后极缓推 1→1.03，7.2s 字与卡退场、底床同帧收",
     category: "素材呈现",
@@ -65,6 +66,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'chip-grid-single-select': {
     slug: 'chip-grid-single-select',
+    alphaFile: 'talkcraft-cards/chip-grid-single-select.tsx', // 透明改编版（全量）：根整屏底已去掉；支持 theme light/dark（深色字浅色版），叠加渲染时用此文件
     name: "五选一反黑",
     oneliner: "N 个候选 chip 3+2 居中铺开让观众读题（前 2s）；选中帧先插 1 帧灰色按压，紧接 5 帧 linear 反黑（底→墨、字→白）+ 1→1.04→1 极轻正弦回弹，其余 chip 降到 18% 但位置锁死；停 1.5s 看清选中态后余项归零、黑 chip 上移 46px 收窄 0.82 并横向补偿回中线，下方算式行浮现逐词加深——\"选了它，然后……\"",
     category: "数据信息图",
@@ -81,6 +83,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'countdown-arc-scatter': {
     slug: 'countdown-arc-scatter',
+    alphaFile: 'talkcraft-cards/countdown-arc-scatter.tsx', // 透明改编版（全量）：根整屏底已去掉；支持 theme light/dark（深色字浅色版），叠加渲染时用此文件
     name: "数字弧落标题",
     oneliner: "一串相邻递减的数字 11 / 10 / 9 … 5 / 4 / 3 切向挂在半径 150 的弧上，整盘从 96° 扫回 0°（0.57s，power2.out 急停），位置角超 ±70° 的数字用角度算透明度\"转进视野\"；停稳那一刻被选中的\"5\"正在弧顶，随即 0.3s 平移到标题首字符位并同步回正，其余数字原地 blur 3 淡出不位移，\"分钟 / 搭好 / 创作系统\"逐词解糊，末词 1.75s 染强调色；落定后整幕静止到 4.6s 同收",
     category: "字幕花字",
@@ -97,6 +100,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'crash-zoom-punch': {
     slug: 'crash-zoom-punch',
+    alphaFile: 'talkcraft-cards/crash-zoom-punch.tsx', // 透明改编版（全量）：根整屏底已去掉，叠加渲染时用此文件
     name: "急推特写",
     oneliner: "全景静置 1s 让观众看清整页，然后 6 帧 ease-in 急推到截图里的目标文字块（zoom 1→2.3，相机中心同步收敛到目标中心），过冲后 5 帧回收 4.5% 到 2.2 落定；急推那 6 帧叠一记短促 blur 当运动模糊，之后画面钉死——一次性的重音\"就是这一行\"",
     category: "强调标注",
@@ -113,6 +117,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'doc-park-left-pill-deal': {
     slug: 'doc-park-left-pill-deal',
+    alphaFile: 'talkcraft-cards/doc-park-left-pill-deal.tsx', // 透明改编版（全量）：根整屏底已去掉；支持 theme light/dark（深色字浅色版），叠加渲染时用此文件
     name: "文档驻留发牌",
     oneliner: "700×420 的文档先满幅在场 0.9s，然后不淡出而是以左边缘为锚驻留（0.8s power2.inOut：translateX −514 + scale .92，只露约 35%——\"来源还在\"），右侧按旁白节奏每 1.3s 慢发牌一张白底描边药丸（0.2s 淡入 + 0.37s back.out(1.7) 落定，先实后稳），每张落定 0.3s 后其下说明行逐词加深并留住；文档内容全程 −18.75 px/s 极慢自动滚动\"正在被读\"；三张落齐是静态结论清单，6.6s 同收",
     category: "素材呈现",
@@ -131,6 +136,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'error-retype': {
     slug: 'error-retype',
+    alphaFile: 'talkcraft-cards/error-retype.tsx', // 透明改编版（全量）：根整屏底已去掉；支持 theme light/dark（深色字浅色版），叠加渲染时用此文件
     name: "打字改口",
     oneliner: "句干\"口播做得好，靠的是\"先在，后半句以打字机节奏（0.09s/字，帧确定硬切）打出\"模型大小\"→ 停 0.55s、光标以 4 帧半周期闪两下（犹豫）→ 以更快的 0.06s/字退掉 → 零犹豫同速重打\"讲述方法\"→ 完稿光标闪两下后摘除，整句静置 ≥2.6s 再同收。三档速度差是戏的全部，光标是演员的脸",
     category: "字幕花字",
@@ -164,6 +170,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'flying-words': {
     slug: 'flying-words',
+    alphaFile: 'talkcraft-cards/flying-words.tsx', // 透明改编版（全量）：根整屏底已去掉，叠加渲染时用此文件
     name: "关键词隧道",
     oneliner: "深底上 22 个名词按黄金角铺在扁椭圆截面（半径 82~247）上，沿 z 轴从 −1750 匀速飞到 +800 穿过相机平面擦身而过，每词相位 i/N 均分、跑满 2 整圈首尾无缝；生命曲线 [0,1,.5,.2,0]——前 1/4 猛亮、中段压到半透给前景让位、末段拖尾消失；越近越往画外散（drift .5→1.85），冲到眼前（u>.86）加运动模糊；中心一枚静态光晕钉住\"隧道尽头\"。它是幕底级背景层，前景放人物或标题",
     category: "字幕花字",
@@ -177,6 +184,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'gallery-wall-dolly': {
     slug: 'gallery-wall-dolly',
+    alphaFile: 'talkcraft-cards/gallery-wall-dolly.tsx', // 透明改编版（全量）：根整屏底已去掉；整屏构图重排为浮动面板，叠加渲染时用此文件
     name: "照片墙推轨",
     oneliner: "三张平级案例（430×290）挂在 rotateY −12° 的 3D 墙上（深灰径向幕底 + 地面反光），相机全景 z .61 → 逐张推近停靠 z 1.15（移 1.0s + 停 0.9s；缩放绕当前图发生，其余压暗 .5 + blur 3px，当前图内部 1→1.03 微推）→ 拉回全景与字同收",
     category: "素材呈现",
@@ -191,6 +199,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'grid-to-hero': {
     slug: 'grid-to-hero',
+    alphaFile: 'talkcraft-cards/grid-to-hero.tsx', // 透明改编版（全量）：根整屏底已去掉，叠加渲染时用此文件
     name: "网格收成主角",
     oneliner: "2×2 网格错峰 120ms 落位先并列，讲到那一格时它 0.8s 长成 620×444 主图、其余三格同一条曲线收成右侧一列 220×132 小图（不消失），停 2s 后回到网格，再一起退场",
     category: "素材呈现",
@@ -206,6 +215,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'host-card-glass-board': {
     slug: 'host-card-glass-board',
+    alphaFile: 'talkcraft-cards/host-card-glass-board.tsx', // 透明改编版（全量）：根整屏底已去掉；整屏构图重排为浮动面板，叠加渲染时用此文件
     name: "人物竖卡玻璃台",
     oneliner: "左 1/3 口播人物装 250×444 的 9:16 竖卡常驻（圆角 22、2px 半透白描边、演播室底），右 2/3 一块 570×408 的玻璃道具台以左缘为轴 rotateY −18° → −10° 显影、sheen 扫一次；板头期数小字 → 大标题逐字解糊 → 英文字距行，板内道具按口播接力：三步 tile 逐个 back.out pop、连接线从左长出带箭头、结果胶囊最后落定；6.1s 板、人、装饰同收",
     category: "人物互动",
@@ -245,6 +255,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'lead-word-zoom-assemble': {
     slug: 'lead-word-zoom-assemble',
+    alphaFile: 'talkcraft-cards/lead-word-zoom-assemble.tsx', // 透明改编版（全量）：根整屏底已去掉；支持 theme light/dark（深色字浅色版），叠加渲染时用此文件
     name: "首词占满补句",
     oneliner: "首词\"效率\"以 2.3 倍字号独占画面正中、hold 0.4s 期间继续推近 6%；随后一条 power3.inOut 曲线同时完成\"缩回终字号\"（0.4s）与\"整行左滑归位\"（0.8s，同起同曲线时长两倍），后续词各自从槽位右侧 28px 被推进来（0.4s power4.out，淡入只 2 帧），结论词落位即强调色；整行落定后上移 28px、副行同一时窗浮出，静置 3s 后同收",
     category: "字幕花字",
@@ -261,6 +272,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'line-carry-transition': {
     slug: 'line-carry-transition',
+    alphaFile: 'talkcraft-cards/line-carry-transition.tsx', // 透明改编版（全量）：根整屏底已去掉；支持 theme light/dark（深色字浅色版），叠加渲染时用此文件
     name: "线条接力转场",
     oneliner: "A 镜标题下先画出一条强调色下划线，停一拍后它继续向右冲出画面，镜头跟着线横移 960px（2s power2.inOut；横移段线的生长量 = 镜头位移量，笔头钉在画面 x≈640 永不出画也永不落后），线到位后拐直角向上、向右、向下、向左围出一个 560×330 的画框，框闭合那一帧笔头消失、B 镜内容在框内淡入——全程无剪切，一条线把两镜缝在一起",
     category: "转场结构",
@@ -278,6 +290,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'parallel-items-with-host': {
     slug: 'parallel-items-with-host',
+    alphaFile: 'talkcraft-cards/parallel-items-with-host.tsx', // 透明改编版（全量）：根整屏底已去掉；整屏构图重排为浮动面板，叠加渲染时用此文件
     name: "并列句排版（人物在场）",
     oneliner: "口播讲\"A、B、C\"三件并列的事而人还在画面里时，三项按口播逐个弹出（0.6s 一项）、标签压图且大，七种版式一卡切换——头顶横排 / 三横条灰转彩 / 竖列虚化底 / 顶部卡堆 / 竖切三分 / 斜切三分 / 背景轮换大字",
     category: "人物互动",
@@ -294,6 +307,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'rack-focus-pair': {
     slug: 'rack-focus-pair',
+    alphaFile: 'talkcraft-cards/rack-focus-pair.tsx', // 透明改编版（全量）：根整屏底已去掉，叠加渲染时用此文件
     name: "焦点接力",
     oneliner: "两张白边卡前后叠放、永远一清一糊：讲到哪张，焦点 0.7s power2.inOut 转移过去（前张 blur 0→8 / brightness 1→.6 / scale 1.02→.97，后张反向），4.6s 再转回，6.4s 两张同收——像镜头在两张素材之间对焦",
     category: "素材呈现",
@@ -308,6 +322,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'reticle-lock-on': {
     slug: 'reticle-lock-on',
+    alphaFile: 'talkcraft-cards/reticle-lock-on.tsx', // 透明改编版（全量）：根整屏底已去掉，叠加渲染时用此文件
     name: "准星咬合",
     oneliner: "四个 L 角从四个画外方向（±700, ±500）10 帧扑向截图上的目标，到位时框仍是目标 bbox 的 2.2 倍，随即 6 帧收缩过头到 0.94 再 back.out 回弹到 1——\"咔\"的咬合感来自超调；咬合那一帧目标白闪 .55→.28 常驻微亮、标签同帧 back 弹出在目标右侧，之后全部钉死",
     category: "强调标注",
@@ -324,6 +339,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'scanline-annotate': {
     slug: 'scanline-annotate',
+    alphaFile: 'talkcraft-cards/scanline-annotate.tsx', // 透明改编版（全量）：根整屏底已去掉；支持 theme light/dark（深色字浅色版），叠加渲染时用此文件
     name: "扫描线逐处点名",
     oneliner: "一条强调色扫描线匀速（零缓动）自上而下掠过截图，越过每个目标下缘那一刻取景框从 1.75 倍收拢对准（back.out）+ 7% 对焦确认闪，滞后 5 帧右侧标注淡入并常驻；右上状态行实时数 0/4 → 4/4 → \"分析完成\"——一次扫描点出 N 处，节奏由扫描线统一驱动",
     category: "强调标注",
@@ -339,6 +355,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'source-converge': {
     slug: 'source-converge',
+    alphaFile: 'talkcraft-cards/source-converge.tsx', // 透明改编版（全量）：根整屏底已去掉；支持 theme light/dark（深色字浅色版），叠加渲染时用此文件
     name: "多源汇聚",
     oneliner: "四条细贝塞尔曲线错峰 0.15s 由左向右逐路接通，四个来源胶囊沿各自真实曲线 1.5s 滑向右侧汇聚点并三段式缩小（前 75% 1→.34 慢慢瘦身、后 25% 掉光——\"被吸进去\"），强调色数据包全程沿线滑行两个整周期；吞并瞬间\"一张表\"脉冲 +12%，曲线从起点方向擦除，结果胶囊 + 说明行 0.6s 滑到画面正中静置",
     category: "数据信息图",
@@ -355,6 +372,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'split-60-40-story': {
     slug: 'split-60-40-story',
+    alphaFile: 'talkcraft-cards/split-60-40-story.tsx', // 透明改编版（全量）：根整屏底已去掉；整屏构图重排为浮动面板，叠加渲染时用此文件
     name: "60/40 主从分屏",
     oneliner: "左 60%（576px）一条素材缓推 1→1.06 做主（时长 = 镜头），3px 白中缝，右 40% 标题 30px 两行 + 三枚 pastel chip（24px 粗）按口播 1.0 / 1.6 / 2.2s 逐枚 back.out 弹出；6.8s 素材、中缝、字全部同帧收齐",
     category: "素材呈现",
@@ -372,6 +390,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'split-compare-slider': {
     slug: 'split-compare-slider',
+    alphaFile: 'talkcraft-cards/split-compare-slider.tsx', // 透明改编版（全量）：根整屏底已去掉；整屏构图重排为浮动面板，叠加渲染时用此文件
     name: "对比双分屏（滑动揭示）",
     oneliner: "两张同构图的图叠放，上层用 clip-path 裁掉右侧，一条 3px 白分割线（带圆钮）与裁切边由同一个进度值驱动——左图整屏起手 0.6s → 1.4s 滑到中线 → 停 1.5s → nudge 到 42% 再回中 → 滑到 8% 几乎全露右图 → 回中停 1s → 与两图同收；两图共用一条 1→1.04 的极慢推",
     category: "素材呈现",
@@ -388,6 +407,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'split-text-stagger': {
     slug: 'split-text-stagger',
+    alphaFile: 'talkcraft-cards/split-text-stagger.tsx', // 透明改编版（全量）：根整屏底已去掉；支持 theme light/dark（深色字浅色版），叠加渲染时用此文件
     name: "逐字裂升",
     oneliner: "标题\"把复杂的事，讲简单\"9 个字各在自己的裁切盒（高 = 行高 78）里从下方 115% 升起、back.out(1.2) 带约 5% 过冲回落（极值 ≈1.053），字间错峰 2 帧（0.067s）、每字行程 0.5s；同时一条 3px 基线从左向右 scaleX 长到整行宽，生长时长 = 字的总错峰时长，长满与末字落定同帧——字像从一条线里长出来；1.4s 副标淡入，4.4s 整组同收",
     category: "字幕花字",
@@ -402,6 +422,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'stack-fan-out': {
     slug: 'stack-fan-out',
+    alphaFile: 'talkcraft-cards/stack-fan-out.tsx', // 透明改编版（全量）：根整屏底已去掉；支持 theme light/dark（深色字浅色版），叠加渲染时用此文件
     name: "卡堆扇形展开",
     oneliner: "五张 220×150 卡叠成一叠（微错位）→ 0.7s 绕卡堆下方 R=520 的弧心扇开成 −24°…+24° → 停 0.8s → 0.6s 铺平成一行等距五格（150 宽、间距 16、整行居中、旋转归零）→ 一起退场——\"这一叠\"变成\"这五个\"",
     category: "素材呈现",
@@ -416,6 +437,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'still-layout-relay': {
     slug: 'still-layout-relay',
+    alphaFile: 'talkcraft-cards/still-layout-relay.tsx', // 透明改编版（全量）：根整屏底已去掉；整屏构图重排为浮动面板，叠加渲染时用此文件
     name: "多图排版 + 焦点接力",
     oneliner: "口播一句里要同时给几张图时，主图（首图）先落、其余同向错峰 80~150ms 入场，讲到谁谁亮（其余 brightness .6 / scale .985，主角 1.03~1.04 + 描边环）0.4s 接力，讲完全部回位再一起退场——两种版式一卡切换：一主两辅 / 三联竖图",
     category: "素材呈现",
@@ -432,6 +454,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'timeline-photo-strip': {
     slug: 'timeline-photo-strip',
+    alphaFile: 'talkcraft-cards/timeline-photo-strip.tsx', // 透明改编版（全量）：根整屏底已去掉；整屏构图重排为浮动面板，叠加渲染时用此文件
     name: "时间线照片带",
     oneliner: "有先后的几站（默认四张 240×160）沿一条时间线上下交替，日期 caption 靠线一侧；相机横移逐站停靠（移 0.9s + 停 1.0s，停靠 z 1.05 让邻站明确出画，当前站 1.03 亮 / 其余 .7）→ 拉开 z .62 看全条、有意停 1.2s → 与字同收",
     category: "素材呈现",
@@ -481,6 +504,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'word-relay-filmstrip': {
     slug: 'word-relay-filmstrip',
+    alphaFile: 'talkcraft-cards/word-relay-filmstrip.tsx', // 透明改编版（全量）：根整屏底已去掉；整屏构图重排为浮动面板，叠加渲染时用此文件
     name: "动词接力胶片",
     oneliner: "左列 360 宽的等高截图卡纵向排成胶片、深浅边框相间，右侧衬线两行——名词\"一个 AI，能\"恒定、动词原位接力：每 1.4s 旧词 0.18s 灰化淡出、胶片同起 0.4s power2.inOut 滚动恰好一卡高（212）、新词 +0.2s 起 0.25s 落位（先出后进不叠影），词块垂直中心钉在当前卡中点 y=264；末词换强调色，静置 0.9s 后胶片与词块同收——每切一个词，证据跟着翻一页",
     category: "素材呈现",
@@ -498,6 +522,7 @@ export const TALKCRAFT_COMPONENTS = {
   },
   'word-slot-cycle': {
     slug: 'word-slot-cycle',
+    alphaFile: 'talkcraft-cards/word-slot-cycle.tsx', // 透明改编版（全量）：根整屏底已去掉；整屏构图重排为浮动面板，叠加渲染时用此文件
     name: "词槽轮换",
     oneliner: "句干\"一个 AI，帮你\"左端锚死不动，句尾深色胶囊每 0.7s 向上翻一格换一个短语（前 8 帧换位 power2.inOut + 运动模糊、后 13 帧静置读词），胶囊宽度随词长帧内插值伸缩，胶囊外上下露两行 13% 的幽灵项暗示\"还有一串\"；换完 4 个词胶囊 0.23s 上飞逃走，结论\"搞定所有事\"从下 90px 带 back.out(1.4) 过冲落进同一位置——全卡唯一一次过冲留给结论，之后静置 ≥1.5s 再与句干同收",
     category: "字幕花字",
