@@ -559,6 +559,8 @@ export interface ConversationInjected {
     submitRender: (projectId: string) => Promise<import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingRenderTask>
     render: (renderTaskId: string) => Promise<import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingRenderTask | null>
     cancelRender: (renderTaskId: string) => Promise<import('@deepseek-ai/dsh-business-workbench/types').VideoPackagingRenderTask>
+    /** Best-effort still-frame PNG preview for a library component; null when unavailable. */
+    previewComponent: (request: import('@deepseek-ai/dsh-business-workbench/types').PreviewVideoPackagingComponentRequest) => Promise<import('@deepseek-ai/dsh-business-workbench/types').PreviewVideoPackagingComponentResult | null>
   }
   /**
    * Framework-bound sources. `composerBlock` is this session's block when a

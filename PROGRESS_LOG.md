@@ -2,6 +2,36 @@
 
 > 人话版给简哥，技术细节沉这里。验收门禁按 V3.0 十一级如实标注。
 
+## 2026-10-23 M3 面板真实预览（分支 p2-more-components）
+
+- 背景：预览层对带 libraryRef 的组件只有文字框占位（aikou 有浏览器内联
+  实时渲染，talkcraft/shotcraft 直接文字框）；简哥审美终审靠点开看，
+  占位框没用——面板最大体验缺口。
+- 方案：三库统一走 Host 静帧 PNG。新建 `video-packaging-preview.ts`：
+  复用三条生产渲染链（aikou/Chromium，talkcraft/shotcraft/Remotion），
+  内存 LRU 200 张（params 键序无关），失败/坏引用/超时一律返回 null
+  不抛错。`@Remote('previewVideoPackagingComponent')` → contract/apply →
+  `/api/preview` 分发 → 预览层持久化节点：占位先上（300ms 防抖）、图到
+  换图、最大 2 并发、15s 超时、60s 失败冷却后静默回退文字占位。
+  aikou 内联实时渲染已删除（三库一条代码路径，所见即所得）。
+- 过程插曲：① 本地分支滞后远端 c33824ec，对齐时 API tarball 404——绕行
+  compare API 逐个取回 13 个 fix1 文件，树哈希与远端逐字节一致后开工；
+  ② Typert 构建插件拦下 `Record<string, unknown>`（Remote 边界不许裸
+  unknown），按仓库约定改用 `JsonValue`。
+- 测试：新 spec 9/9（三库真实冒烟：aikou 14s/1280×720、talkcraft 46s/卡片
+  尺寸、shotcraft 49s/1280×720；PNG 非空、四角透明；坏引用→null；缓存
+  命中；LRU 淘汰）；相关套件 51/52——唯一失败
+  `video-packaging-model.spec` 并跑时挂、单跑过，干净树同样复现，是既有
+  测试隔离问题（未修，已记）。`tsc -b tsconfig.host.json` 干净；客户端
+  改动文件干净（余 44 个既有旧错未动）；内联新鲜度 2/2。
+- 遗留：预览是 2s 处静帧（不跟播放头）；talkcraft/shotcraft 预览暂无缩放
+  手柄；冷启动 15–50s 时客户端先回退文字占位、Host 完成后进缓存。
+- Agent Note: .agents/notes/implemented/architecture/2026-10-23-m3-component-preview.md
+  （部分替代 2026-10-22-aikou-shotcraft-render-wiring.md 的内联预览决策，
+  已加 cross-link）
+- 红线：零付费模型调用；未碰 127.0.0.1:3080 与 ~/.dsh；未做 Desktop 部署；
+  原库零修改
+
 ## 2026-10-22 还 lint 旧债 + 内联新鲜度测试（分支 p2-more-components）
 
 - 背景：talkcraft 接线时 pre-commit 钩子被 `video-packaging.ts` 的 15 个旧

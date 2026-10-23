@@ -111,7 +111,7 @@ function buildDocument(): string {
   // huashu-style.js; the browser bundle strips imports, so inline the style
   // module (stripped of export keywords) before packagingPlanJs.
   const helpers = `${bundleLint(aikouLintJs, 'validateAikouLibraryRefs')}\n${bundleLint(talkcraftLintJs, 'validateTalkcraftLibraryRefs')}\n${bundleLint(shotcraftLintJs, 'validateShotcraftLibraryRefs')}\n${bundleLint(huashuStyleLintJs, 'validateHuashuStyle')}\n${stripModule(huashuStyleJs)}\n${stripModule(packagingPlanJs)}\n${stripModule(assetRetrievalJs)}\n${stripModule(aikouComponentsJs)}`
-  const runtime = `<script>const __pending=new Map();let __seq=0;window.addEventListener('message',e=>{if(e.data?.kind==='dsh-video-packaging-response'){const p=__pending.get(e.data.id);if(p){__pending.delete(e.data.id);const body=e.data.body instanceof Blob?e.data.body:typeof e.data.body==='string'?e.data.body:JSON.stringify(e.data.body);p(new Response(body,{status:e.data.status,headers:{'content-type':e.data.contentType||(e.data.body instanceof Blob?'application/octet-stream':'application/json')}}))}}else if(e.data?.kind==='dsh-video-packaging-open'){window.__DSH_PROJECT_ID__=e.data.projectId;location.reload()}else if(e.data?.kind==='dsh-video-packaging-panels'){document.body.classList.toggle('dsh-hide-library',Boolean(e.data.library));document.body.classList.toggle('dsh-hide-inspector',Boolean(e.data.inspector))}});window.fetch=(url,init={})=>new Promise(resolve=>{const id=String(++__seq);__pending.set(id,resolve);parent.postMessage({kind:'dsh-video-packaging-request',id,url:String(url),method:init.method||'GET',headers:Object.fromEntries(new Headers(init.headers||{}).entries()),body:init.body??null},'*')});window.__DSH_PROJECT_ID__=${JSON.stringify(new URLSearchParams(location.search).get('videoPackagingProject') ?? '')};</script><script>${safeScript(helpers)}\n${safeScript(app)}</script>`
+  const runtime = `<script>const __pending=new Map();let __seq=0;window.addEventListener('message',e=>{if(e.data?.kind==='dsh-video-packaging-response'){const p=__pending.get(e.data.id);if(p){__pending.delete(e.data.id);const body=e.data.body instanceof Blob?e.data.body:typeof e.data.body==='string'?e.data.body:JSON.stringify(e.data.body);p(new Response(body,{status:e.data.status,headers:{'content-type':e.data.contentType||(e.data.body instanceof Blob?'application/octet-stream':'application/json')}}))}}else if(e.data?.kind==='dsh-video-packaging-open'){window.__DSH_PROJECT_ID__=e.data.projectId;location.reload()}else if(e.data?.kind==='dsh-video-packaging-panels'){document.body.classList.toggle('dsh-hide-library',Boolean(e.data.library));document.body.classList.toggle('dsh-hide-inspector',Boolean(e.data.inspector))}});window.fetch=(url,init={})=>new Promise((resolve,reject)=>{const signal=init.signal||null;if(signal&&signal.aborted){reject(new DOMException('The operation was aborted.','AbortError'));return}const id=String(++__seq);const onAbort=()=>{__pending.delete(id);reject(new DOMException('The operation was aborted.','AbortError'))};if(signal){signal.addEventListener('abort',onAbort,{once:true})}__pending.set(id,res=>{if(signal){signal.removeEventListener('abort',onAbort)}resolve(res)});parent.postMessage({kind:'dsh-video-packaging-request',id,url:String(url),method:init.method||'GET',headers:Object.fromEntries(new Headers(init.headers||{}).entries()),body:init.body??null},'*')});window.__DSH_PROJECT_ID__=${JSON.stringify(new URLSearchParams(location.search).get('videoPackagingProject') ?? '')};</script><script>${safeScript(helpers)}\n${safeScript(app)}</script>`
   const responsive = `
     body{min-width:0!important}
     .workspace{grid-template-columns:minmax(190px,240px) minmax(0,1fr) minmax(210px,270px);gap:10px;padding:10px}
@@ -240,6 +240,32 @@ async function dispatch(
     if (!activeProjectId) throw new Error('当前没有 Host 工程')
     const task = await bridge.submitRender(activeProjectId)
     return json({ renderId: task.renderTaskId })
+  }
+  if (url === '/api/preview' && method === 'POST') {
+    const body = typeof request.body === 'string' ? JSON.parse(request.body) as {
+      readonly libraryRef?: { readonly lib?: string; readonly componentId?: string; readonly params?: Record<string, import('@deepseek-ai/dsh-session/types').JsonValue> }
+      readonly width?: number
+      readonly height?: number
+      readonly darkScene?: boolean
+    } : null
+    const ref = body?.libraryRef
+    if (!ref || typeof ref.lib !== 'string') return json({ error: '预览请求无效' }, 400)
+    try {
+      const preview = await bridge.previewComponent({
+        libraryRef: {
+          lib: ref.lib,
+          ...(typeof ref.componentId === 'string' ? { componentId: ref.componentId } : {}),
+          ...(typeof ref.params === 'object' && ref.params !== null ? { params: ref.params } : {}),
+        },
+        width: body.width ?? 1280,
+        height: body.height ?? 720,
+        darkScene: body.darkScene ?? false,
+      })
+      if (preview === null) return json({ error: '组件暂无预览' }, 404)
+      return json({ data: preview.data, width: preview.width, height: preview.height, fullCanvas: preview.fullCanvas })
+    } catch {
+      return json({ error: '组件预览失败' }, 502)
+    }
   }
   if (url.startsWith('/api/render/') && method === 'GET') {
     const task = await bridge.render(url.split('/').at(-1) ?? '')

@@ -30,7 +30,14 @@ import {
   renderShotcraftStillPng,
 } from './video-packaging-shotcraft.ts'
 import type { ShotcraftLibraryRef } from './video-packaging-shotcraft.ts'
-import type { VideoPackagingAsset, VideoPackagingProject, VideoPackagingRenderTask } from './types.ts'
+import { previewComponentPng } from './video-packaging-preview.ts'
+import type {
+  PreviewVideoPackagingComponentRequest,
+  PreviewVideoPackagingComponentResult,
+  VideoPackagingAsset,
+  VideoPackagingProject,
+  VideoPackagingRenderTask,
+} from './types.ts'
 
 /** 组件是否带 Host 隔离渲染的库引用（talkcraft/aikou/shotcraft 任一）。 */
 function isLibraryComponent(component: unknown): boolean {
@@ -547,6 +554,20 @@ export class VideoPackagingStore {
       return cancelled
     }
     return settled
+  }
+
+  /**
+   * 组件预览：给带 libraryRef 的组件渲染一张静帧 PNG（供面板预览层）。
+   * Best-effort：同一请求只渲染一次（内存 LRU，最多 200 张）；渲染失败、
+   * 引用非法、渲染器缺失时返回 null，调用方静默回退文字占位，不抛错。
+   * @param request - 组件引用 + 画布尺寸 + 深色场景开关。
+   * @returns PNG 结果；不可预览时为 null。
+   */
+  async previewComponent(
+    request: PreviewVideoPackagingComponentRequest,
+  ): Promise<PreviewVideoPackagingComponentResult | null> {
+    this.assertEnabled()
+    return previewComponentPng(request)
   }
 
   /** Stop active render children during Host disposal and await durable task settlement. */

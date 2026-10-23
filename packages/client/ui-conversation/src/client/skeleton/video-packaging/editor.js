@@ -696,39 +696,16 @@ function addComponent(type) {
   setDirty()
 }
 
-let aikouCssReady = false
-
-function ensureAikouCss() {
-  if (aikouCssReady || typeof AIKOU_CSS !== 'string') return
-  const style = document.createElement('style')
-  style.id = 'aikou-components'
-  style.textContent = AIKOU_CSS
-  document.head.append(style)
-  aikouCssReady = true
-}
-
-/**
- * Preview markup for an AI口播包装库 component (libraryRef.lib === 'aikou').
- * Positions are authored in the component params (engine coordinates), so the
- * wrapper spans the whole stage and the inner canvas maps project pixels 1:1
- * before the stage scale. Falls back to a visible error box, never blank.
- */
-function aikouMarkup(item, time, scale) {
-  ensureAikouCss()
-  const ref = { ...item.libraryRef, params: { ...(item.libraryRef.params ?? {}), t0: 0, t1: item.duration } }
-  let body = ''
-  try {
-    body = renderAikouComponent(ref, Math.max(0, time - item.start))
-  } catch (error) {
-    body = `<div class="aikou-fallback">AI口播组件渲染失败：${escapeHtml(error.message)}</div>`
-  }
-  return `<div class="overlay-item aikou-layer" data-overlay="${item.id}" style="left:0;top:0;width:100%;height:100%;z-index:${item.layer};">`
-    + `<div class="aikou-canvas" style="width:${project.width}px;height:${project.height}px;transform:scale(${scale});">${body}</div></div>`
-}
-
 function componentMarkup(item, time, scale) {
   if (!active(item, time)) return ''
-  if (item.libraryRef && item.libraryRef.lib === 'aikou') return aikouMarkup(item, time, scale)
+  // Library components (aikou/talkcraft/shotcraft) render through persistent
+  // preview nodes fed by Host still PNGs (see library preview section below);
+  // a failed preview falls back to the text placeholder via the same path.
+  if (isLibraryPreviewItem(item) && !libraryPreviewFailed(item)) return ''
+  return textComponentMarkup(item, time, scale)
+}
+
+function textComponentMarkup(item, time, scale) {
   const elapsed = Math.max(0, time - item.start)
   const fade = item.animation !== 'none' ? Math.min(1, elapsed / 0.28, (item.start + item.duration - time) / 0.2) : 1
   const yOffset = item.animation === 'fadeUp' ? 14 * (1 - Math.min(1, elapsed / 0.35)) : 0
@@ -742,6 +719,220 @@ function componentMarkup(item, time, scale) {
   }
   if (item.type === 'highlight') return `<div class="overlay-item highlight${item.visualStyle === 'underline' ? ' underline' : ''}${selectedClass}" data-overlay="${item.id}" style="${style};border-color:${item.accent};">${escapeHtml(item.text).replaceAll('\n', '<br>')}<i class="resize-handle"></i></div>`
   return `<div class="overlay-item info${selectedClass}" data-overlay="${item.id}" style="${style};border-left-color:${item.accent};background:${item.background}d9;"><b>${escapeHtml(item.title)}</b><span>${escapeHtml(item.body)}</span><i class="resize-handle"></i></div>`
+}
+
+/* ---- Library component still previews (Host PNG) ----
+ * Items carrying libraryRef (aikou/talkcraft/shotcraft) show a real still PNG
+ * rendered by the Host instead of the inline/text placeholder. The wrapper
+ * mounts first with a quiet placeholder (first paint never blocks); the PNG
+ * swaps in when it arrives. Any failure — bad ref, timeout, missing renderer —
+ * degrades silently to the text placeholder; the panel never errors or blanks.
+ *
+ * Guards: 300ms debounce on param edits, max 2 concurrent fetches, 15s fetch
+ * timeout, 60s fail cooldown per key, client-side object-URL cache (200).
+ */
+const LIBRARY_PREVIEW_LIBS = new Set(['aikou', 'talkcraft', 'shotcraft'])
+const LIBRARY_PREVIEW_MAX_CONCURRENT = 2
+const LIBRARY_PREVIEW_TIMEOUT_MS = 15000
+const LIBRARY_PREVIEW_DEBOUNCE_MS = 300
+const LIBRARY_PREVIEW_COOLDOWN_MS = 60000
+const LIBRARY_PREVIEW_URL_CACHE_MAX = 200
+
+const libraryPreviewNodes = new Map()
+const libraryPreviewQueue = []
+let libraryPreviewActive = 0
+const libraryPreviewFailedAt = new Map()
+const libraryPreviewUrls = new Map()
+
+function isLibraryPreviewItem(item) {
+  return Boolean(item && item.libraryRef && LIBRARY_PREVIEW_LIBS.has(item.libraryRef.lib))
+}
+
+function libraryPreviewKey(item) {
+  return JSON.stringify([
+    item.libraryRef.lib,
+    item.libraryRef.componentId ?? null,
+    item.libraryRef.params ?? null,
+    project.width,
+    project.height,
+    project.darkScene === true,
+  ])
+}
+
+function libraryPreviewFailed(item) {
+  const failedAt = libraryPreviewFailedAt.get(libraryPreviewKey(item))
+  return Boolean(failedAt && Date.now() - failedAt < LIBRARY_PREVIEW_COOLDOWN_MS)
+}
+
+function getLibraryPreviewEntry(item) {
+  let entry = libraryPreviewNodes.get(item.id)
+  if (!entry) {
+    const wrapper = document.createElement('div')
+    wrapper.className = 'overlay-item library-preview'
+    wrapper.dataset.overlay = item.id
+    const slot = document.createElement('div')
+    slot.className = 'library-preview-slot'
+    wrapper.append(slot)
+    const img = document.createElement('img')
+    img.className = 'library-preview-img'
+    img.alt = ''
+    img.hidden = true
+    wrapper.append(img)
+    entry = { wrapper, slot, img, key: null, loadTimer: null, controller: null }
+    libraryPreviewNodes.set(item.id, entry)
+    overlayLayer.append(wrapper)
+  }
+  return entry
+}
+
+function scheduleLibraryPreviewLoad(entry, item, key) {
+  if (entry.loadTimer) clearTimeout(entry.loadTimer)
+  if (entry.controller) { try { entry.controller.abort() } catch (ignored) { /* superseded */ } entry.controller = null }
+  entry.loadTimer = setTimeout(() => {
+    entry.loadTimer = null
+    libraryPreviewQueue.push({ itemId: item.id, key })
+    pumpLibraryPreviewQueue()
+  }, LIBRARY_PREVIEW_DEBOUNCE_MS)
+}
+
+function pumpLibraryPreviewQueue() {
+  while (libraryPreviewActive < LIBRARY_PREVIEW_MAX_CONCURRENT && libraryPreviewQueue.length > 0) {
+    const job = libraryPreviewQueue.shift()
+    void runLibraryPreviewLoad(job)
+  }
+}
+
+async function runLibraryPreviewLoad(job) {
+  libraryPreviewActive++
+  try {
+    await loadLibraryPreview(job)
+  } finally {
+    libraryPreviewActive--
+    pumpLibraryPreviewQueue()
+  }
+}
+
+function cacheLibraryPreviewUrl(key, base64) {
+  const hit = libraryPreviewUrls.get(key)
+  if (hit) {
+    libraryPreviewUrls.delete(key)
+    libraryPreviewUrls.set(key, hit)
+    return hit
+  }
+  const bytes = Uint8Array.from(atob(base64), char => char.charCodeAt(0))
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }))
+  libraryPreviewUrls.set(key, url)
+  while (libraryPreviewUrls.size > LIBRARY_PREVIEW_URL_CACHE_MAX) {
+    const oldest = libraryPreviewUrls.keys().next()
+    if (oldest.done) break
+    URL.revokeObjectURL(libraryPreviewUrls.get(oldest.value))
+    libraryPreviewUrls.delete(oldest.value)
+  }
+  return url
+}
+
+function failLibraryPreview(entry, item, key) {
+  libraryPreviewFailedAt.set(key, Date.now())
+  if (entry.loadTimer) clearTimeout(entry.loadTimer)
+  entry.wrapper.remove()
+  libraryPreviewNodes.delete(item.id)
+  renderPreview()
+}
+
+async function loadLibraryPreview({ itemId, key }) {
+  const item = project?.components.find(value => value.id === itemId)
+  const entry = libraryPreviewNodes.get(itemId)
+  if (!item || !entry || entry.key !== key || !isLibraryPreviewItem(item)) return
+  const failedAt = libraryPreviewFailedAt.get(key)
+  if (failedAt && Date.now() - failedAt < LIBRARY_PREVIEW_COOLDOWN_MS) {
+    failLibraryPreview(entry, item, key)
+    return
+  }
+  const cachedUrl = libraryPreviewUrls.get(key)
+  if (cachedUrl) {
+    entry.img.src = cachedUrl
+    entry.img.hidden = false
+    entry.slot.hidden = true
+    return
+  }
+  const controller = new AbortController()
+  entry.controller = controller
+  const timer = setTimeout(() => controller.abort(), LIBRARY_PREVIEW_TIMEOUT_MS)
+  try {
+    const res = await fetch('/api/preview', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        libraryRef: item.libraryRef,
+        width: project.width,
+        height: project.height,
+        darkScene: project.darkScene === true,
+      }),
+      signal: controller.signal,
+    })
+    if (!res.ok) {
+      failLibraryPreview(entry, item, key)
+      return
+    }
+    const payload = await res.json()
+    if (!payload || typeof payload.data !== 'string' || payload.data.length === 0) {
+      failLibraryPreview(entry, item, key)
+      return
+    }
+    const url = cacheLibraryPreviewUrl(key, payload.data)
+    if (entry.key !== key || !entry.wrapper.isConnected) return
+    entry.img.src = url
+    entry.img.hidden = false
+    entry.slot.hidden = true
+  } catch (error) {
+    failLibraryPreview(entry, item, key)
+  } finally {
+    clearTimeout(timer)
+    if (entry.controller === controller) entry.controller = null
+  }
+}
+
+function syncLibraryPreviewEntry(entry, item, time) {
+  const fullStage = item.libraryRef.lib !== 'talkcraft'
+  const visible = active(item, time)
+  entry.wrapper.classList.toggle('selected', item.id === selectedId)
+  if (fullStage) {
+    Object.assign(entry.wrapper.style, { left: '0', top: '0', width: '100%', height: '100%', zIndex: String(item.layer), display: visible ? 'block' : 'none' })
+  } else {
+    Object.assign(entry.wrapper.style, {
+      left: `${item.x / project.width * 100}%`,
+      top: `${item.y / project.height * 100}%`,
+      width: `${item.width / project.width * 100}%`,
+      height: `${item.height / project.height * 100}%`,
+      zIndex: String(item.layer),
+      display: visible ? 'block' : 'none',
+    })
+  }
+  const key = libraryPreviewKey(item)
+  if (entry.key === key) return
+  entry.key = key
+  entry.img.hidden = true
+  entry.img.removeAttribute('src')
+  entry.slot.hidden = false
+  entry.slot.innerHTML = `<span>${escapeHtml(item.libraryRef.componentId || item.libraryRef.lib)} · 预览生成中…</span>`
+  scheduleLibraryPreviewLoad(entry, item, key)
+}
+
+function syncLibraryPreviews(time) {
+  if (!project) return
+  const keep = new Set()
+  for (const item of project.components) {
+    if (item.type === 'asset' || !isLibraryPreviewItem(item) || libraryPreviewFailed(item)) continue
+    keep.add(item.id)
+    syncLibraryPreviewEntry(getLibraryPreviewEntry(item), item, time)
+  }
+  for (const [id, entry] of libraryPreviewNodes) {
+    if (keep.has(id)) continue
+    if (entry.loadTimer) clearTimeout(entry.loadTimer)
+    if (entry.controller) { try { entry.controller.abort() } catch (ignored) { /* teardown */ } }
+    entry.wrapper.remove()
+    libraryPreviewNodes.delete(id)
+  }
 }
 
 function renderPreview() {
@@ -786,6 +977,7 @@ function renderPreview() {
     overlayLayer.append(wrapper)
   }
   for (const [id, node] of previewAssetNodes) if (!keepAssets.has(id)) { node.remove(); previewAssetNodes.delete(id) }
+  syncLibraryPreviews(time)
   $('#time-readout').textContent = fmt(time)
   $('#playhead-label').textContent = `播放头 ${fmt(time)}`
   renderPlayhead()

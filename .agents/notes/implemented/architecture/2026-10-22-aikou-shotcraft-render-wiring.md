@@ -1,5 +1,11 @@
 # aikou/shotcraft 生产渲染接线
 
+> **后续（2026-10-23）**：本 note 的**生产渲染链**（`runRender` 接线）仍然有效；
+> 其中预览层的 aikou 内联实时渲染（`aikouMarkup`）已被 M3 统一替换为 Host
+> 静帧 PNG（`previewVideoPackagingComponent`），三库收敛到一条代码路径。
+> 详见 [M3 面板真实预览](./2026-10-23-m3-component-preview.md)。这是部分替代，
+> 本 note 保持有效。
+
 日期：2026-10-22。分支：p2-more-components。
 
 部分延续 [talkcraft 透明分发接线](./2026-10-22-talkcraft-render-wiring.md)

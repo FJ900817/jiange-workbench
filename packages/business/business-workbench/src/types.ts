@@ -1650,3 +1650,26 @@ export interface VideoPackagingRenderTask {
   readonly createdAt: number
   readonly updatedAt: number
 }
+
+/** 组件预览请求：给带 libraryRef 的组件要一张静帧 PNG（best-effort）。 */
+export interface PreviewVideoPackagingComponentRequest {
+  readonly libraryRef: {
+    readonly lib: string
+    readonly componentId?: string
+    readonly params?: Record<string, JsonValue>
+  }
+  readonly width: number
+  readonly height: number
+  readonly darkScene?: boolean
+  readonly stillSec?: number
+}
+
+/** 组件预览结果；不可预览时为 null。 */
+export interface PreviewVideoPackagingComponentResult {
+  /** Base64 编码的 PNG 字节（RGBA，卡片支持处背景透明）。 */
+  readonly data: string
+  readonly width: number
+  readonly height: number
+  /** PNG 是否覆盖整幅画布（aikou/shotcraft 为真；talkcraft 卡片尺寸为假）。 */
+  readonly fullCanvas: boolean
+}

@@ -48,6 +48,10 @@ import {
   requestVideoPackagingAiPlan,
 } from './video-packaging-model.ts'
 import type { RunVideoPackagingPlanRequest } from './types.ts'
+import type {
+  PreviewVideoPackagingComponentRequest,
+  PreviewVideoPackagingComponentResult,
+} from './types.ts'
 import {
   BusinessReadBoundary,
   executionPackageHash,
@@ -874,7 +878,11 @@ export class BusinessWorkbenchService extends TypertRemoteService {
 
   /** Append one ordered base64 chunk; each call is capped by the Host transfer policy. */
   @Remote('appendVideoPackagingUploadChunk')
-  appendVideoPackagingUploadChunk(request: { readonly uploadId: string; readonly offset: number; readonly data: string }): Promise<{ readonly receivedBytes: number; readonly nextOffset: number }> {
+  appendVideoPackagingUploadChunk(request: {
+    readonly uploadId: string
+    readonly offset: number
+    readonly data: string
+  }): Promise<{ readonly receivedBytes: number; readonly nextOffset: number }> {
     return this.requireVideoPackaging().appendUploadChunk(request)
   }
 
@@ -898,7 +906,11 @@ export class BusinessWorkbenchService extends TypertRemoteService {
 
   /** Read one bounded chunk from a Host-managed media Asset. */
   @Remote('readVideoPackagingAssetChunk')
-  readVideoPackagingAssetChunk(request: { readonly assetId: string; readonly offset: number; readonly maxBytes: number }): Promise<{ readonly asset: VideoPackagingAsset; readonly offset: number; readonly data: string; readonly eof: boolean }> {
+  readVideoPackagingAssetChunk(request: {
+    readonly assetId: string
+    readonly offset: number
+    readonly maxBytes: number
+  }): Promise<{ readonly asset: VideoPackagingAsset; readonly offset: number; readonly data: string; readonly eof: boolean }> {
     return this.requireVideoPackaging().readAssetChunk(request)
   }
 
@@ -922,7 +934,11 @@ export class BusinessWorkbenchService extends TypertRemoteService {
 
   /** Save a validated P5-07 document using compare-and-swap revision control. */
   @Remote('saveVideoPackagingProject')
-  saveVideoPackagingProject(request: { readonly projectId: string; readonly expectedRevision: number; readonly document: JsonValue }): Promise<VideoPackagingProject> {
+  saveVideoPackagingProject(request: {
+    readonly projectId: string
+    readonly expectedRevision: number
+    readonly document: JsonValue
+  }): Promise<VideoPackagingProject> {
     return this.requireVideoPackaging().saveProject(request)
   }
 
@@ -942,6 +958,14 @@ export class BusinessWorkbenchService extends TypertRemoteService {
   @Remote('cancelVideoPackagingRender')
   cancelVideoPackagingRender(renderTaskId: string): Promise<VideoPackagingRenderTask> {
     return this.requireVideoPackaging().cancelRender(renderTaskId)
+  }
+
+  /** Render one best-effort still-frame PNG preview for a library component; null when unavailable. */
+  @Remote('previewVideoPackagingComponent')
+  previewVideoPackagingComponent(
+    request: PreviewVideoPackagingComponentRequest,
+  ): Promise<PreviewVideoPackagingComponentResult | null> {
+    return this.requireVideoPackaging().previewComponent(request)
   }
 
   /** Read one bounded local AIHOT Article/Analysis page through the Host adapter.
@@ -1058,7 +1082,11 @@ export class BusinessWorkbenchService extends TypertRemoteService {
    * @returns A detail projection or a content-free failure state.
    */
   @Remote('getXhsFeedDetail')
-  getXhsFeedDetail(input: { readonly id: string; readonly xsecToken: string; readonly loadComments?: boolean }): Promise<XhsFeedDetailResult> {
+  getXhsFeedDetail(input: {
+    readonly id: string
+    readonly xsecToken: string
+    readonly loadComments?: boolean
+  }): Promise<XhsFeedDetailResult> {
     return getXhsFeedDetail(input)
   }
 

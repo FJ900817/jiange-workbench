@@ -351,14 +351,20 @@ export function apply(ctx: Context): void {
       const bytes = new Uint8Array(await file.arrayBuffer())
       const digest = await crypto.subtle.digest('SHA-256', bytes)
       const sha256 = [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('')
-      const begun = await ctx.remote.businessWorkbench.beginVideoPackagingUpload({ name: file.name, mediaType, bytes: bytes.byteLength, sha256 })
+      const begun = await ctx.remote.businessWorkbench.beginVideoPackagingUpload({
+        name: file.name, mediaType, bytes: bytes.byteLength, sha256,
+      })
       if (!begun.ok) throw new Error(`MP4/PNG 导入未开始：Host 视频包装服务不可用（${begun.error.code}）。原文件未修改；请检查连接或服务配置后重新选择文件。`)
       try {
         for (let offset = 0; offset < bytes.byteLength; offset += begun.value.chunkBytes) {
           const chunk = bytes.subarray(offset, Math.min(bytes.byteLength, offset + begun.value.chunkBytes))
           let binary = ''
-          for (let index = 0; index < chunk.length; index += 0x8000) binary += String.fromCharCode(...chunk.subarray(index, Math.min(index + 0x8000, chunk.length)))
-          const appended = await ctx.remote.businessWorkbench.appendVideoPackagingUploadChunk({ uploadId: begun.value.uploadId, offset, data: btoa(binary) })
+          for (let index = 0; index < chunk.length; index += 0x8000) {
+            binary += String.fromCharCode(...chunk.subarray(index, Math.min(index + 0x8000, chunk.length)))
+          }
+          const appended = await ctx.remote.businessWorkbench.appendVideoPackagingUploadChunk({
+            uploadId: begun.value.uploadId, offset, data: btoa(binary),
+          })
           if (!appended.ok) throw new Error(`Host 媒体分块上传失败（${appended.error.code}）`)
         }
         const finished = await ctx.remote.businessWorkbench.finishVideoPackagingUpload(begun.value.uploadId)
@@ -412,6 +418,11 @@ export function apply(ctx: Context): void {
     cancelRender: async (renderTaskId: string) => {
       const result = await ctx.remote.businessWorkbench.cancelVideoPackagingRender(renderTaskId)
       if (!result.ok) throw new Error('Host 渲染任务无法取消')
+      return result.value
+    },
+    previewComponent: async (request: import('@deepseek-ai/dsh-business-workbench/types').PreviewVideoPackagingComponentRequest) => {
+      const result = await ctx.remote.businessWorkbench.previewVideoPackagingComponent(request)
+      if (!result.ok) throw new Error('Host 组件预览不可用')
       return result.value
     },
   }
