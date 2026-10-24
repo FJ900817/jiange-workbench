@@ -1007,10 +1007,16 @@ function renderTimeline() {
   const ruler = $('#ruler')
   ruler.innerHTML = ''
   ruler.style.backgroundSize = `${100 / timelineDuration}% 100%`
+  const pixelsPerSecond = ruler.clientWidth / timelineDuration
+  const labelInterval = [1, 2, 5, 10, 30, 60].find(interval => interval * pixelsPerSecond >= 60) ?? 60
+  const lastWholeSecond = Math.floor(duration)
+  const lastRegularLabel = Math.floor(lastWholeSecond / labelInterval) * labelInterval
   for (let sec = 0; sec <= duration; sec += 1) {
     const tick = document.createElement('span')
     tick.className = 'tick'
-    tick.textContent = `${sec}s`
+    const regularLabel = sec % labelInterval === 0
+    const spacedEndLabel = sec === lastWholeSecond && (sec - lastRegularLabel) * pixelsPerSecond >= 60
+    tick.textContent = regularLabel || spacedEndLabel ? `${sec}s` : ''
     tick.style.left = `${sec / timelineDuration * 100}%`
     ruler.append(tick)
   }
@@ -1256,4 +1262,5 @@ $('#zoom-in').addEventListener('click', () => { zoom = Math.min(2, zoom + 0.2); 
 $('#zoom-out').addEventListener('click', () => { zoom = Math.max(0.6, zoom - 0.2); renderTimeline() })
 $('#fit-button').addEventListener('click', () => { zoom = 1; renderTimeline(); notify('预览已适配画布') })
 window.addEventListener('resize', renderPreview)
+window.addEventListener('resize', renderTimeline)
 loadProject().catch(error => notify(error.message))
