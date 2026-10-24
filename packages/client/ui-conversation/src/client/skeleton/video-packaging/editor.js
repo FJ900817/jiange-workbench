@@ -782,6 +782,7 @@ function getLibraryPreviewEntry(item) {
     libraryPreviewNodes.set(item.id, entry)
     overlayLayer.append(wrapper)
   }
+  if (!entry.wrapper.isConnected) overlayLayer.append(entry.wrapper)
   return entry
 }
 
